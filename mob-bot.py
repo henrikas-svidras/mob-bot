@@ -79,10 +79,10 @@ async def begin_round(ctx):
     # If round number has not yet been set, means this is the first round
     if not "Round" in data:
         new_round_number = 1
-        players = get_yaml(player_file)
     else:
         new_round_number = int(data["Round"])+1
 
+    players = get_yaml(player_file)
     update_yaml_file(vote_tracking_file, {p:p for p in players}, new_round_number)
     update_yaml_file(game_state_file, new_round_number, "Round")
     update_yaml_file(game_state_file, "IN_ROUND", "game_state")
