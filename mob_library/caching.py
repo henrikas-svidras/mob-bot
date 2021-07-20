@@ -21,7 +21,6 @@ def update_yaml_file(path, value, key):
         value: the value to set.
         key (str): the key the value will be set to
     """ 
-    print(path)
     data = get_yaml(path)
     if data is None:
         data = {} 
