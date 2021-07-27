@@ -12,14 +12,15 @@ TOKEN = env_vars['bot-token']
 ### Create game state or use pre existing
 game_state_file = env_vars['game-state-file']
 smart_create_file(game_state_file)
-
+if get_yaml(game_state_file) is None:
+    update_yaml_file(game_state_file, 'IN_ROUND', "game_state")
 ### Create vote tracking file or use pre existing
 vote_tracking_file = env_vars['vote-tracking-file']
 smart_create_file(vote_tracking_file)
 
 ### List of available roles
 player_file = env_vars['player-file']
-available_roles = env_vars['available_roles']
+available_roles = env_vars['available-roles']
 print(available_roles)
 
 ### Discord bot stuff
@@ -140,6 +141,24 @@ async def vote(ctx, player):
 #async def vote_error(ctx, error):
 #    if isinstance(error, commands.DisabledCommand):
 #        await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is over.')
+
+@bot.command("create-new-alliance")
+@require_inround
+async def vote(ctx, name):
+
+    discord_server = ctx.guild
+
+    guild = ctx.guild
+    member = ctx.author
+    admin_role = discord.utils.get(guild.roles, name="kinda admin")
+    category = discord.utils.get(discord_server.categories, id=env_vars['alliance-chats'])
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(read_messages=False),
+        guild.me: discord.PermissionOverwrite(read_messages=True),
+        admin_role: discord.PermissionOverwrite(read_messages=True),
+        member: discord.PermissionOverwrite(read_messages=True)
+    }
+    await discord_server.create_text_channel(name, category=category, overwrites=overwrites)
 
 ### Start bot
 bot.run(TOKEN)
