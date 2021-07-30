@@ -17,6 +17,10 @@ if get_yaml(GAME_STATE_FILE) is None:
 
 ### Create vote tracking file or use pre existing
 VOTE_TRACKING_FILE = ENV_VARS['vote-tracking-file']
+smart_create_file(VOTE_TRACKING_FILE)
+### Create vote tracking file or use pre existing
+ALLIANCE_FILE = ENV_VARS['alliance-file']
+smart_create_file(ALLIANCE_FILE)
 
 ### List of available roles
 PLAYER_FILE = ENV_VARS['player-file']
@@ -157,22 +161,91 @@ async def vote(ctx, player):
 #    if isinstance(error, commands.DisabledCommand):
 #        await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is over.')
 
-@bot.command("create-new-alliance")
-@commands.has_role(ENV_VARS["dead-role"])
+@bot.command("create_new_alliance")
+@commands.has_role(ENV_VARS["alive-role"])
 @require(state="IN_ROUND")
-async def vote(ctx, name):
+async def create_new_alliance(ctx, name):
 
     guild = ctx.guild
     member = ctx.author
     
     category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
     overwrites = {
-        guild.default_role: discord.PermissionOverwrite(read_messages=False),
-        guild.me: discord.PermissionOverwrite(read_messages=True),
-        admin_role: discord.PermissionOverwrite(read_messages=True),
-        member: discord.PermissionOverwrite(read_messages=True)
+        guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
+        guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+        admin_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+        member: discord.PermissionOverwrite(read_messages=True, send_messages=True)
     }
     await guild.create_text_channel(name, category=category, overwrites=overwrites)
+    
+    new_channel = discord.utils.get(category.channels, name=name, type=ChannelType.text)
+
+    alliance = {
+        'name': name,
+        'state': 'unlocked',
+        'members':[ctx.author.name],
+    }
+    
+    update_yaml_file(ALLIANCE_FILE, alliance, new_channel.id)
+
+
+@bot.command("add_player")
+@commands.has_role(ENV_VARS["alive-role"])
+@require(state="IN_ROUND")
+async def add_player(ctx, player):
+
+    guild = ctx.guild
+    
+    channel = ctx.channel
+    
+    alliances = get_yaml(ALLIANCE_FILE)
+
+    if channel.id in alliances:
+        alliance = alliances[channel.id]
+        if alliance['state'] == 'unlocked':
+
+            live_players = get_yaml(PLAYER_FILE)
+
+            ### Tries to look up the targeted member:
+            player_name = guild.get_member_named(player)
+            if player_name is None:
+                await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
+            elif player_name.id in live_players:
+                await ctx.channel.send(f"{player_name} has been noted.")
+            else:
+                await ctx.channel.send(f"You are trying to add {player}, but such a player is not in the game!")
+            
+            alliance['members'].append(player_name.id)
+            update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
+
+        else: # if alliance is locked
+            return
+    else: # if command called not in an alliance chat
+        return
+
+
+@bot.command("open_alliance")
+@commands.has_role(ENV_VARS["alive-role"])
+@require(state="IN_ROUND")
+async def open_alliance(ctx):
+    
+    channel = ctx.channel
+    
+    alliances = get_yaml(ALLIANCE_FILE)
+
+    if channel.id in alliances:
+        alliance = alliances[channel.id]
+        if alliance['state'] == 'unlocked':
+            alliance['state'] = 'open'
+            update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
+    
+    # add everyone into alliance (TODO)
+
+    
+
+    
+
+
 
 ### Start bot
 bot.run(TOKEN)
