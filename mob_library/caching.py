@@ -10,7 +10,6 @@ def get_yaml(path):
     env_vars = None
     with open(path, 'r') as stream:
         env_vars = yaml.safe_load(stream)
-    print(env_vars)
     return env_vars
 
 def update_yaml_file(path, value, key):

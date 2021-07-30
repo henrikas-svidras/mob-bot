@@ -4,24 +4,30 @@ from discord.ext import commands
 import yaml
 
 from mob_library.caching import get_yaml, smart_create_file, update_yaml_file
-from mob_library.decorators import require_inround, require_interround, require_pregame
+from mob_library.decorators import require
 
-env_vars = get_yaml("env.yaml")
-TOKEN = env_vars['bot-token']
+ENV_VARS = get_yaml("env.yaml")
+TOKEN = ENV_VARS['bot-token']
 
 ### Create game state or use pre existing
-game_state_file = env_vars['game-state-file']
-smart_create_file(game_state_file)
-if get_yaml(game_state_file) is None:
-    update_yaml_file(game_state_file, 'IN_ROUND', "game_state")
+GAME_STATE_FILE = ENV_VARS['game-state-file']
+smart_create_file(GAME_STATE_FILE)
+if get_yaml(GAME_STATE_FILE) is None:
+    update_yaml_file(GAME_STATE_FILE, 'PRE_GAME', "game_state")
+
 ### Create vote tracking file or use pre existing
-vote_tracking_file = env_vars['vote-tracking-file']
-smart_create_file(vote_tracking_file)
+VOTE_TRACKING_FILE = ENV_VARS['vote-tracking-file']
 
 ### List of available roles
-player_file = env_vars['player-file']
-available_roles = env_vars['available-roles']
-print(available_roles)
+PLAYER_FILE = ENV_VARS['player-file']
+smart_create_file(PLAYER_FILE)
+
+AVAILABLE_ROLES = ENV_VARS['available-roles']
+
+### Get admin role
+
+
+
 
 ### Discord bot stuff
 intents = discord.Intents.default()
@@ -33,35 +39,41 @@ bot = commands.Bot(command_prefix='~!', intents=intents)
 # Commands to use before the game
 
 @bot.command("register_player")
-@require_pregame
+@commands.has_permissions(administrator=True)
+@require(state="PRE_GAME")
 async def register_player(ctx, player, role):
-    smart_create_file(player_file)
-    live_players = get_yaml(player_file)
+    smart_create_file(PLAYER_FILE)
+    live_players = get_yaml(PLAYER_FILE)
     live_roles = []
 
     if not live_players is None:
         for p in live_players:
             print(f"Already assigned {p}.")
-            live_roles.append(live_players[p])
-
+            live_roles.append(live_players[p]['role'])
+    print(live_roles)
     discord_server = ctx.guild
     
-    print(discord_server)
     ### Tries to look up the targeted member:
     player_name = discord_server.get_member_named(player)
     # Checks if player name has been found
     if player_name is None:
         await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?")
     # Checks if such a role exists
-    elif not role in available_roles:
+    elif not role in AVAILABLE_ROLES:
         await ctx.channel.send(f"Cannot assign {player} the {role} because such a role is not defined as available!")
     # Checks if such a role has not yet been assigned
     elif role in live_roles:
         await ctx.channel.send(f"Cannot assign {player} the {role} because it is already assigned!")
     # Registers the player if all previous steps suceeded
     else:
-        update_yaml_file(player_file, role, player_name.id)
-        await ctx.channel.send(f"{player_name} is added, with the role {role}.")
+        player_params = {
+            "name": player_name.nick if not player_name.nick is None else player_name.name,
+            "role": role,
+            "state": "Alive",
+        }
+        live_roles.append(role)
+        update_yaml_file(PLAYER_FILE, player_params, player_name.id)
+        await ctx.channel.send(f"{player_name} is added, with the role {player_params['role']}.")
       
 #@register_player.error
 #async def register_player_error(ctx, error):
@@ -71,26 +83,27 @@ async def register_player(ctx, player, role):
 # Commands to start a round
 
 @bot.command("begin_round")
-@require_interround
+@commands.has_permissions(administrator=True)
+@require(state=["INTER_ROUND","PRE_GAME"])
 async def begin_round(ctx):
     """The method to call when you want to begin a new round. It can only be called when you have your game in INTER_ROUND or PRE_GAME state.
     """
     
-    data = get_yaml(game_state_file)
+    data = get_yaml(GAME_STATE_FILE)
     # If round number has not yet been set, means this is the first round
     if not "Round" in data:
         new_round_number = 1
     else:
         new_round_number = int(data["Round"])+1
 
-    players = get_yaml(player_file)
-    update_yaml_file(vote_tracking_file, {p:p for p in players}, new_round_number)
-    update_yaml_file(game_state_file, new_round_number, "Round")
-    update_yaml_file(game_state_file, "IN_ROUND", "game_state")
+    players = get_yaml(PLAYER_FILE)
+    update_yaml_file(VOTE_TRACKING_FILE, {p:p for p in players}, new_round_number)
+    update_yaml_file(GAME_STATE_FILE, new_round_number, "Round")
+    update_yaml_file(GAME_STATE_FILE, "IN_ROUND", "game_state")
 
     rounds_votes = {}
     
-    await ctx.channel.send("Switching INTER_ROUND -> IN_ROUND")
+    await ctx.channel.send("Switching to IN_ROUND")
     await ctx.channel.send(f"We are in Round {new_round_number}")
 
 #@begin_round.error
@@ -101,9 +114,10 @@ async def begin_round(ctx):
 # Commands to stop a round
 
 @bot.command("stop_round")
-@require_inround
+@commands.has_permissions(administrator=True)
+@require(state="IN_ROUND")
 async def stop_round(ctx):
-    update_yaml_file(game_state_file, "INTER_ROUND", "game_state")
+    update_yaml_file(GAME_STATE_FILE, "INTER_ROUND", "game_state")
     await ctx.channel.send("Switching IN_ROUND -> INTER_ROUND")
 
 @stop_round.error
@@ -114,24 +128,25 @@ async def stop_round_error(ctx, error):
 # Commands for players
 
 @bot.command("vote")
-@require_inround
+@commands.has_role(ENV_VARS["alive-role"])
+@require(state="IN_ROUND")
 async def vote(ctx, player):
 
     discord_server = ctx.guild
     
-    live_players = get_yaml(player_file)
+    live_players = get_yaml(PLAYER_FILE)
 
     ### Tries to look up the targeted member:
     player_name = discord_server.get_member_named(player)
     if player_name.id in live_players:
-        game_state = get_yaml(game_state_file)
+        game_state = get_yaml(GAME_STATE_FILE)
         round_number = game_state['Round']
-        votes = get_yaml(vote_tracking_file)
+        votes = get_yaml(VOTE_TRACKING_FILE)
         round_votes = votes[round_number]
         round_votes[ctx.message.author.id] = player_name.id
-        update_yaml_file(vote_tracking_file, round_votes, round_number)
+        update_yaml_file(VOTE_TRACKING_FILE, round_votes, round_number)
         if not player_name is None:
-            await ctx.channel.send(f"This person is trying to vote {player_name}")
+            await ctx.channel.send(f"Your vote against {player_name} has been noted.")
         else:
             await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
     else:
@@ -143,22 +158,21 @@ async def vote(ctx, player):
 #        await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is over.')
 
 @bot.command("create-new-alliance")
-@require_inround
+@commands.has_role(ENV_VARS["dead-role"])
+@require(state="IN_ROUND")
 async def vote(ctx, name):
-
-    discord_server = ctx.guild
 
     guild = ctx.guild
     member = ctx.author
-    admin_role = discord.utils.get(guild.roles, name="kinda admin")
-    category = discord.utils.get(discord_server.categories, id=env_vars['alliance-chats'])
+    
+    category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False),
         guild.me: discord.PermissionOverwrite(read_messages=True),
         admin_role: discord.PermissionOverwrite(read_messages=True),
         member: discord.PermissionOverwrite(read_messages=True)
     }
-    await discord_server.create_text_channel(name, category=category, overwrites=overwrites)
+    await guild.create_text_channel(name, category=category, overwrites=overwrites)
 
 ### Start bot
 bot.run(TOKEN)
