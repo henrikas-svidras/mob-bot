@@ -1,4 +1,5 @@
 
+from mob_library.helpers import is_dead
 import discord
 from discord.ext import commands
 import yaml
@@ -143,23 +144,27 @@ async def kill_player(ctx, player):
     try:
         player = live_players[player_object.id]
         if player["state"] == "Alive":
-            await ctx.channel.send(f"{player.name} will be killed (moved to 'Dead' role)")
+            await ctx.channel.send(f"{player_object.name} will be killed (moved to 'Dead' role)")
+            for alliance, stats in alliances.items():
+                if player_object.name in stats['members']:
+                    stats['members'].remove(player_object.name)
+
+                    alliance_channel = discord.utils.get(category.channels, id=alliance)
+
+                    overwrite = discord.PermissionOverwrite()
+                    overwrite.send_messages = False
+                    overwrite.read_messages = False
+
+                    await alliance_channel.set_permissions(player_object, overwrite=overwrite)
+
+
+                    update_yaml_file(ALLIANCE_FILE, stats, alliance)
         else:
             await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
     except KeyError:
         await ctx.channel.send("No such player.")
     
-    for alliance, stats in alliances.items():
-        if player_object.name in stats['members']:
-            stats['members'].remove(player_object.name)
 
-            alliance_channel = discord.utils.get(category.channels, id=alliance)
-            
-        if player_object.name in stats['members']:
-            alliance_channel.set_permissions(
-                player_object, send_messages=False, read_messages=False)
-
-            update_yaml_file(ALLIANCE_FILE, stats, alliance)
 
     
 # Commands for players
@@ -203,12 +208,15 @@ async def create_new_alliance(ctx, name):
     member = ctx.author
     
     category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
+    admin_role = discord.utils.get(guild.roles, name = ENV_VARS['admin-role'])
+
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
         guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
         admin_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
         member: discord.PermissionOverwrite(read_messages=True, send_messages=True)
     }
+    print(category)
     await guild.create_text_channel(name, category=category, overwrites=overwrites)
     
     new_channel = discord.utils.get(category.channels, name=name)
@@ -258,7 +266,7 @@ async def add_player(ctx, player):
 
 
 @bot.command("open_alliance")
-@commands.has_role(ENV_VARS["alive-role"])
+#@commands.has_role(ENV_VARS["alive-role"])
 @require(state="IN_ROUND")
 async def open_alliance(ctx):
     
@@ -270,16 +278,24 @@ async def open_alliance(ctx):
     if channel.id in alliances:
         alliance = alliances[channel.id]
         if alliance['state'] == 'unlocked':
+
+            print(alliances)
+            for player in alliance["members"]:
+                
+
+                player_object = guild.get_member_named(player)
+
+                if is_dead(player_object.id):
+                    await channel.send("You are attempting to add a dead player to the alliance.")
+
+                await channel.set_permissions(player_object, send_messages=True, read_messages=True)
+
             alliance['state'] = 'open'
             update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
         else:
             return
     else:
         return
-    
-    for player in alliance["members"]:
-        player_object = guild.get_member_named(player)
-        ctx.channel.set_permissions(player_object, send_messages=True, read_messages=True)
 
     
 

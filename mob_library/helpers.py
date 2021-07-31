@@ -1,7 +1,7 @@
 from .caching import get_yaml
 
 env = get_yaml("env.yaml")
-DEAD_ROLE = env['Dead']
+DEAD_ROLE = env['dead-role']
 
 def is_dead(player):
     member_object = discord.utils.get(guild.members, id=player)
