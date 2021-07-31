@@ -129,6 +129,39 @@ async def stop_round_error(ctx, error):
     if isinstance(error, commands.DisabledCommand):
         await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is already stopped.')
 
+@bot.command("kill_player")
+@commands.has_permissions(administrator=True)
+@require(state="INTER_ROUND")
+async def kill_player(ctx, player):
+    guild = ctx.guild
+
+    player_object = guild.get_member_named(player)
+    live_players = get_yaml(PLAYER_FILE)
+    alliances = get_yaml(ALLIANCE_FILE)
+    category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
+
+    try:
+        player = live_players[player_object.id]
+        if player["state"] == "Alive":
+            await ctx.channel.send(f"{player.name} will be killed (moved to 'Dead' role)")
+        else:
+            await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
+    except KeyError:
+        await ctx.channel.send("No such player.")
+    
+    for alliance, stats in alliances.items():
+        if player_object.name in stats['members']:
+            stats['members'].remove(player_object.name)
+
+            alliance_channel = discord.utils.get(category.channels, id=alliance)
+            
+        if player_object.name in stats['members']:
+            alliance_channel.set_permissions(
+                player_object, send_messages=False, read_messages=False)
+
+            update_yaml_file(ALLIANCE_FILE, stats, alliance)
+
+    
 # Commands for players
 
 @bot.command("vote")
@@ -178,7 +211,7 @@ async def create_new_alliance(ctx, name):
     }
     await guild.create_text_channel(name, category=category, overwrites=overwrites)
     
-    new_channel = discord.utils.get(category.channels, name=name, type=ChannelType.text)
+    new_channel = discord.utils.get(category.channels, name=name)
 
     alliance = {
         'name': name,
@@ -215,7 +248,7 @@ async def add_player(ctx, player):
             else:
                 await ctx.channel.send(f"You are trying to add {player}, but such a player is not in the game!")
             
-            alliance['members'].append(player_name.id)
+            alliance['members'].append(player_name.name)
             update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
 
         else: # if alliance is locked
@@ -229,6 +262,7 @@ async def add_player(ctx, player):
 @require(state="IN_ROUND")
 async def open_alliance(ctx):
     
+    guild = ctx.guild
     channel = ctx.channel
     
     alliances = get_yaml(ALLIANCE_FILE)
@@ -238,10 +272,14 @@ async def open_alliance(ctx):
         if alliance['state'] == 'unlocked':
             alliance['state'] = 'open'
             update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
+        else:
+            return
+    else:
+        return
     
-    # add everyone into alliance (TODO)
-
-    
+    for player in alliance["members"]:
+        player_object = guild.get_member_named(player)
+        ctx.channel.set_permissions(player_object, send_messages=True, read_messages=True)
 
     
 
