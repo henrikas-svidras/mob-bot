@@ -29,15 +29,15 @@ smart_create_file(PLAYER_FILE)
 
 AVAILABLE_ROLES = ENV_VARS['available-roles']
 
-### Get admin role
 
-
-
+# Miscalenous
+def check_if_confessional(ctx):
+    return ctx.channel.category.id == ENV_VARS['confessional-chats']
 
 ### Discord bot stuff
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix='~!', intents=intents)
+bot = commands.Bot(command_prefix='^', intents=intents)
 
 ### Methods called through discord chat
 
@@ -80,10 +80,10 @@ async def register_player(ctx, player, role):
         update_yaml_file(PLAYER_FILE, player_params, player_name.id)
         await ctx.channel.send(f"{player_name} is added, with the role {player_params['role']}.")
       
-#@register_player.error
-#async def register_player_error(ctx, error):
-#    if isinstance(error, commands.DisabledCommand):
-#        await ctx.channel.send('This command is disabled if the game is started, available only in PRE_GAME.')
+@register_player.error
+async def register_player_error(ctx, error):
+   if isinstance(error, commands.DisabledCommand):
+       await ctx.channel.send('This command is disabled if the game is started, available only in PRE_GAME.')
 
 # Commands to start a round
 
@@ -111,10 +111,10 @@ async def begin_round(ctx):
     await ctx.channel.send("Switching to IN_ROUND")
     await ctx.channel.send(f"We are in Round {new_round_number}")
 
-#@begin_round.error
-#async def begin_round_error(ctx, error):
-#    if isinstance(error, commands.DisabledCommand):
-#        await ctx.channel.send('This command is disabled during IN_ROUND, because the round is already ongoing.')
+@begin_round.error
+async def begin_round_error(ctx, error):
+   if isinstance(error, commands.DisabledCommand):
+       await ctx.channel.send('This command is disabled during IN_ROUND, because the round is already ongoing.')
 
 # Commands to stop a round
 
@@ -134,6 +134,8 @@ async def stop_round_error(ctx, error):
 @commands.has_permissions(administrator=True)
 @require(state="INTER_ROUND")
 async def kill_player(ctx, player):
+    """A method to kill a player (set to dead)
+    """
     guild = ctx.guild
 
     player_object = guild.get_member_named(player)
@@ -145,6 +147,8 @@ async def kill_player(ctx, player):
         player = live_players[player_object.id]
         if player["state"] == "Alive":
             await ctx.channel.send(f"{player_object.name} will be killed (moved to 'Dead' role)")
+            player["state"] = 'Dead'
+            update_yaml_file(PLAYER_FILE, player, player_object.id)
             for alliance, stats in alliances.items():
                 if player_object.name in stats['members']:
                     stats['members'].remove(player_object.name)
@@ -159,13 +163,26 @@ async def kill_player(ctx, player):
 
 
                     update_yaml_file(ALLIANCE_FILE, stats, alliance)
+
         else:
             await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
     except KeyError:
         await ctx.channel.send("No such player.")
     
 
+@bot.command("print_vote")
+@commands.has_permissions(administrator=True)
+async def print_vote(ctx, round=None):
+    discord_server = ctx.guild
+    if round is None:
+        round = get_yaml(GAME_STATE_FILE)['Round']
 
+    votes = get_yaml(VOTE_TRACKING_FILE)
+
+    for voter, votee in votes[round].items(): 
+        voter_object = discord_server.get_member(voter)
+        votee_object = discord_server.get_member(votee)
+        await ctx.channel.send(f'{voter_object.name}: {votee_object.name}')
     
 # Commands for players
 
@@ -176,31 +193,35 @@ async def vote(ctx, player):
 
     discord_server = ctx.guild
     
-    live_players = get_yaml(PLAYER_FILE)
+    players = get_yaml(PLAYER_FILE)
 
     ### Tries to look up the targeted member:
     player_name = discord_server.get_member_named(player)
-    if player_name.id in live_players:
-        game_state = get_yaml(GAME_STATE_FILE)
-        round_number = game_state['Round']
-        votes = get_yaml(VOTE_TRACKING_FILE)
-        round_votes = votes[round_number]
-        round_votes[ctx.message.author.id] = player_name.id
-        update_yaml_file(VOTE_TRACKING_FILE, round_votes, round_number)
-        if not player_name is None:
-            await ctx.channel.send(f"Your vote against {player_name} has been noted.")
+    if player_name.id in players:
+        if players[player_name.id]['state'] == 'Alive':
+            game_state = get_yaml(GAME_STATE_FILE)
+            round_number = game_state['Round']
+            votes = get_yaml(VOTE_TRACKING_FILE)
+            round_votes = votes[round_number]
+            round_votes[ctx.message.author.id] = player_name.id
+            update_yaml_file(VOTE_TRACKING_FILE, round_votes, round_number)
+            if not player_name is None:
+                await ctx.channel.send(f"Your vote against {player_name.nick} has been noted.")
+            else:
+                await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
         else:
-            await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
+            await ctx.channel.send(f"You are trying to vote {player}, but but this player is dead!")
     else:
         await ctx.channel.send(f"You are trying to vote {player}, but such a player is not in the game!")
 
-#@vote.error
-#async def vote_error(ctx, error):
-#    if isinstance(error, commands.DisabledCommand):
-#        await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is over.')
+@vote.error
+async def vote_error(ctx, error):
+   if isinstance(error, commands.DisabledCommand):
+       await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is over.')
 
 @bot.command("create_new_alliance")
 @commands.has_role(ENV_VARS["alive-role"])
+@commands.check(check_if_confessional)
 @require(state="IN_ROUND")
 async def create_new_alliance(ctx, name):
 
@@ -208,12 +229,12 @@ async def create_new_alliance(ctx, name):
     member = ctx.author
     
     category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
-    admin_role = discord.utils.get(guild.roles, name = ENV_VARS['admin-role'])
+    #admin_role = discord.utils.get(guild.roles, name = ENV_VARS['admin-role'])
 
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
         guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-        admin_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+    #    admin_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
         member: discord.PermissionOverwrite(read_messages=True, send_messages=True)
     }
     print(category)
@@ -248,15 +269,24 @@ async def add_player(ctx, player):
             live_players = get_yaml(PLAYER_FILE)
 
             ### Tries to look up the targeted member:
-            player_name = guild.get_member_named(player)
-            if player_name is None:
+            player_object = guild.get_member_named(player)
+
+            if is_dead(player_object):
+                await channel.send("You are attempting to add a dead player to the alliance. They can't bet added.")
+                return
+
+            if player_object is None:
                 await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
-            elif player_name.id in live_players:
-                await ctx.channel.send(f"{player_name} has been noted.")
+            elif player_object.name in alliance['members']:
+                await ctx.channel.send(f"{player_object} is already in this alliance.")
+                return
+            elif player_object.id in live_players:
+                await ctx.channel.send(f"{player_object} has been noted.")
             else:
                 await ctx.channel.send(f"You are trying to add {player}, but such a player is not in the game!")
+                return
             
-            alliance['members'].append(player_name.name)
+            alliance['members'].append(player_object.name)
             update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
 
         else: # if alliance is locked
@@ -266,7 +296,7 @@ async def add_player(ctx, player):
 
 
 @bot.command("open_alliance")
-#@commands.has_role(ENV_VARS["alive-role"])
+@commands.has_role(ENV_VARS["alive-role"])
 @require(state="IN_ROUND")
 async def open_alliance(ctx):
     
@@ -281,12 +311,8 @@ async def open_alliance(ctx):
 
             print(alliances)
             for player in alliance["members"]:
-                
 
                 player_object = guild.get_member_named(player)
-
-                if is_dead(player_object.id):
-                    await channel.send("You are attempting to add a dead player to the alliance.")
 
                 await channel.set_permissions(player_object, send_messages=True, read_messages=True)
 
@@ -297,7 +323,6 @@ async def open_alliance(ctx):
     else:
         return
 
-    
 
 
 
