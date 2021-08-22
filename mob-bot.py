@@ -219,15 +219,53 @@ async def vote_error(ctx, error):
    if isinstance(error, commands.DisabledCommand):
        await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is over.')
 
-@bot.command("create_new_alliance")
+@bot.command("alliance")
 @commands.has_role(ENV_VARS["alive-role"])
 @commands.check(check_if_confessional)
 @require(state="IN_ROUND")
-async def create_new_alliance(ctx, name):
+async def create_new_alliance(ctx, name, *args):
 
     guild = ctx.guild
     member = ctx.author
+
+    live_players = get_yaml(PLAYER_FILE)
     
+    players_to_add = []
+    players_to_add.append(ctx.author)
+    for to_add in args:
+        player_object = guild.get_member_named(to_add)
+
+        if player_object == ctx.author:
+            continue
+
+        if player_object in players_to_add:
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+            await ctx.channel.send(f"You attempted to add the same player ({display_name}) twice.")
+            return
+
+
+        if player_object is None:
+            await ctx.channel.send(f"Can't find '{to_add}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
+            return
+
+        if is_dead(player_object):
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+            await ctx.channel.send(f"You are attempting to add a dead player ({display_name}) to the alliance. They can't bet added.")
+            return
+
+        elif player_object.id in live_players:
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+            await ctx.channel.send(f"{display_name} has been noted.")
+        else:
+            await ctx.channel.send(f"You are trying to add {to_add}, but such a player is not in the game!")
+            return
+        
+        players_to_add.append(player_object)
+    print(players_to_add)
+    if len(players_to_add)<3:
+        await ctx.channel.send('An alliance may only be created for 3+ players (You + at least two more).')
+        return
+
     category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
     #admin_role = discord.utils.get(guild.roles, name = ENV_VARS['admin-role'])
 
@@ -235,93 +273,95 @@ async def create_new_alliance(ctx, name):
         guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
         guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
     #    admin_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-        member: discord.PermissionOverwrite(read_messages=True, send_messages=True)
     }
-    print(category)
+    
+    for to_add in players_to_add:
+        overwrites[to_add] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+
     await guild.create_text_channel(name, category=category, overwrites=overwrites)
     
     new_channel = discord.utils.get(category.channels, name=name)
 
     alliance = {
         'name': name,
-        'state': 'unlocked',
-        'members':[ctx.author.name],
+        'state': 'open',
+        'members':[p.id for p in players_to_add],
     }
     
     update_yaml_file(ALLIANCE_FILE, alliance, new_channel.id)
 
 
-@bot.command("add_player")
-@commands.has_role(ENV_VARS["alive-role"])
-@require(state="IN_ROUND")
-async def add_player(ctx, player):
+# @bot.command("add_player")
+# @commands.has_role(ENV_VARS["alive-role"])
+# @require(state="IN_ROUND")
+# async def add_player(ctx, player):
 
-    guild = ctx.guild
+#     guild = ctx.guild
     
-    channel = ctx.channel
+#     channel = ctx.channel
     
-    alliances = get_yaml(ALLIANCE_FILE)
+#     alliances = get_yaml(ALLIANCE_FILE)
 
-    if channel.id in alliances:
-        alliance = alliances[channel.id]
-        if alliance['state'] == 'unlocked':
+#     if channel.id in alliances:
+#         alliance = alliances[channel.id]
+#         if alliance['state'] == 'unlocked':
 
-            live_players = get_yaml(PLAYER_FILE)
+#             live_players = get_yaml(PLAYER_FILE)
 
-            ### Tries to look up the targeted member:
-            player_object = guild.get_member_named(player)
+#             ### Tries to look up the targeted member:
+#             player_object = guild.get_member_named(player)
 
-            if is_dead(player_object):
-                await channel.send("You are attempting to add a dead player to the alliance. They can't bet added.")
-                return
+#             if is_dead(player_object):
+#                 await channel.send("You are attempting to add a dead player to the alliance. They can't bet added.")
+#                 return
 
-            if player_object is None:
-                await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
-            elif player_object.name in alliance['members']:
-                await ctx.channel.send(f"{player_object} is already in this alliance.")
-                return
-            elif player_object.id in live_players:
-                await ctx.channel.send(f"{player_object} has been noted.")
-            else:
-                await ctx.channel.send(f"You are trying to add {player}, but such a player is not in the game!")
-                return
+#             if player_object is None:
+#                 await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
+#             elif player_object.name in alliance['members']:
+#                 await ctx.channel.send(f"{player_object} is already in this alliance.")
+#                 return
+#             elif player_object.id in live_players:
+#                 await ctx.channel.send(f"{player_object} has been noted.")
+#             else:
+#                 await ctx.channel.send(f"You are trying to add {player}, but such a player is not in the game!")
+#                 return
             
-            alliance['members'].append(player_object.name)
-            update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
+#             alliance['members'].append(player_object.name)
+#             update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
 
-        else: # if alliance is locked
-            return
-    else: # if command called not in an alliance chat
-        return
+#         else: # if alliance is locked
+#             return
+#     else: # if command called not in an alliance chat
+#         return
 
 
-@bot.command("open_alliance")
-@commands.has_role(ENV_VARS["alive-role"])
-@require(state="IN_ROUND")
-async def open_alliance(ctx):
+# @bot.command("open_alliance")
+# @commands.has_role(ENV_VARS["alive-role"])
+# @require(state="IN_ROUND")
+# async def open_alliance(ctx):
     
-    guild = ctx.guild
-    channel = ctx.channel
+#     guild = ctx.guild
+#     channel = ctx.channel
     
-    alliances = get_yaml(ALLIANCE_FILE)
+#     alliances = get_yaml(ALLIANCE_FILE)
 
-    if channel.id in alliances:
-        alliance = alliances[channel.id]
-        if alliance['state'] == 'unlocked':
+#     if channel.id in alliances:
+#         alliance = alliances[channel.id]
+#         if alliance['state'] == 'unlocked':
 
-            print(alliances)
-            for player in alliance["members"]:
+#             print(alliances)
+#             for player in alliance["members"]:
 
-                player_object = guild.get_member_named(player)
+#                 player_object = guild.get_member_named(player)
 
-                await channel.set_permissions(player_object, send_messages=True, read_messages=True)
+#                 await channel.set_permissions(player_object, send_messages=True, read_messages=True)
 
-            alliance['state'] = 'open'
-            update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
-        else:
-            return
-    else:
-        return
+#             alliance['state'] = 'open'
+#             update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
+#         else:
+#             return
+#     else:
+#         return
 
 
 
