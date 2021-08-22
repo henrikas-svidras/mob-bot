@@ -59,9 +59,9 @@ async def register_player(ctx, player, role):
     discord_server = ctx.guild
     
     ### Tries to look up the targeted member:
-    player_name = discord_server.get_member_named(player)
+    player_object = discord_server.get_member_named(player)
     # Checks if player name has been found
-    if player_name is None:
+    if player_object is None:
         await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?")
     # Checks if such a role exists
     elif not role in AVAILABLE_ROLES:
@@ -72,13 +72,16 @@ async def register_player(ctx, player, role):
     # Registers the player if all previous steps suceeded
     else:
         player_params = {
-            "name": player_name.nick if not player_name.nick is None else player_name.name,
+            "name": player_object.nick if not player_object.nick is None else player_object.name,
             "role": role,
             "state": "Alive",
+            "inventory": []
         }
         live_roles.append(role)
-        update_yaml_file(PLAYER_FILE, player_params, player_name.id)
-        await ctx.channel.send(f"{player_name} is added, with the role {player_params['role']}.")
+        update_yaml_file(PLAYER_FILE, player_params, player_object.id)
+        alive_role = discord.utils.get(discord_server.roles, name=ENV_VARS['alive_role'])
+        await player_object.add_roles(alive_role) #adds the role
+        await ctx.channel.send(f"{player_params['name']} is added, with the role {player_params['role']}.")
       
 @register_player.error
 async def register_player_error(ctx, error):
@@ -136,22 +139,28 @@ async def stop_round_error(ctx, error):
 async def kill_player(ctx, player):
     """A method to kill a player (set to dead)
     """
-    guild = ctx.guild
+    discord_server = ctx.guild
 
-    player_object = guild.get_member_named(player)
+    player_object = discord_server.get_member_named(player)
     live_players = get_yaml(PLAYER_FILE)
     alliances = get_yaml(ALLIANCE_FILE)
-    category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
+    category = discord.utils.get(discord_server.categories, id=ENV_VARS['alliance-chats'])
 
-    try:
+    if player_object is None:
+        await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?")
+        return
+    elif not player_object.id in live_players: 
+        await ctx.channel.send(f"{player} is found in server but not playing!")
+        return
+    else:
         player = live_players[player_object.id]
         if player["state"] == "Alive":
             await ctx.channel.send(f"{player_object.name} will be killed (moved to 'Dead' role)")
             player["state"] = 'Dead'
             update_yaml_file(PLAYER_FILE, player, player_object.id)
             for alliance, stats in alliances.items():
-                if player_object.name in stats['members']:
-                    stats['members'].remove(player_object.name)
+                if player_object.id in stats['members']:
+                    stats['members'].remove(player_object.id)
 
                     alliance_channel = discord.utils.get(category.channels, id=alliance)
 
@@ -162,12 +171,15 @@ async def kill_player(ctx, player):
                     await alliance_channel.set_permissions(player_object, overwrite=overwrite)
 
 
-                    update_yaml_file(ALLIANCE_FILE, stats, alliance)
+                update_yaml_file(ALLIANCE_FILE, stats, alliance)
+            alive_role = discord.utils.get(discord_server.roles, name=ENV_VARS['alive-role'])
+            dead_role = discord.utils.get(discord_server.roles, name=ENV_VARS['dead-role'])
+            await player_object.remove_roles(alive_role) #adds the role
+            await player_object.add_roles(dead_role) #adds the role
 
         else:
             await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
-    except KeyError:
-        await ctx.channel.send("No such player.")
+
     
 
 @bot.command("print_vote")
@@ -223,7 +235,7 @@ async def vote_error(ctx, error):
 @commands.has_role(ENV_VARS["alive-role"])
 @commands.check(check_if_confessional)
 @require(state="IN_ROUND")
-async def create_new_alliance(ctx, name, *args):
+async def alliance(ctx, name, *args):
 
     guild = ctx.guild
     member = ctx.author
@@ -231,11 +243,11 @@ async def create_new_alliance(ctx, name, *args):
     live_players = get_yaml(PLAYER_FILE)
     
     players_to_add = []
-    players_to_add.append(ctx.author)
+    players_to_add.append(member)
     for to_add in args:
         player_object = guild.get_member_named(to_add)
 
-        if player_object == ctx.author:
+        if player_object == member:
             continue
 
         if player_object in players_to_add:
@@ -278,9 +290,9 @@ async def create_new_alliance(ctx, name, *args):
     for to_add in players_to_add:
         overwrites[to_add] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
-    await guild.create_text_channel(name, category=category, overwrites=overwrites)
+    channel = await guild.create_text_channel(name, category=category, overwrites=overwrites)
     
-    new_channel = discord.utils.get(category.channels, name=name)
+    await channel.edit(topic=f'{players_to_add}')
 
     alliance = {
         'name': name,
@@ -288,7 +300,7 @@ async def create_new_alliance(ctx, name, *args):
         'members':[p.id for p in players_to_add],
     }
     
-    update_yaml_file(ALLIANCE_FILE, alliance, new_channel.id)
+    update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
 
 
 # @bot.command("add_player")
