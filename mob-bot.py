@@ -1,4 +1,5 @@
 
+from discord import player
 from mob_library.helpers import is_dead
 import discord
 from discord.ext import commands
@@ -19,7 +20,12 @@ if get_yaml(GAME_STATE_FILE) is None:
 ### Create vote tracking file or use pre existing
 VOTE_TRACKING_FILE = ENV_VARS['vote-tracking-file']
 smart_create_file(VOTE_TRACKING_FILE)
-### Create vote tracking file or use pre existing
+
+### Create item tracking file or use pre existing
+ITEM_TRACKING_FILE = ENV_VARS['item-tracking-file']
+smart_create_file(ITEM_TRACKING_FILE)
+
+### Create alliance tracking file or use pre existing
 ALLIANCE_FILE = ENV_VARS['alliance-file']
 smart_create_file(ALLIANCE_FILE)
 
@@ -106,6 +112,7 @@ async def begin_round(ctx):
 
     players = get_yaml(PLAYER_FILE)
     update_yaml_file(VOTE_TRACKING_FILE, {p:p for p in players}, new_round_number)
+    update_yaml_file(ITEM_TRACKING_FILE, {p:p for p in players}, new_round_number)
     update_yaml_file(GAME_STATE_FILE, new_round_number, "Round")
     update_yaml_file(GAME_STATE_FILE, "IN_ROUND", "game_state")
 
@@ -208,23 +215,26 @@ async def vote(ctx, player):
     players = get_yaml(PLAYER_FILE)
 
     ### Tries to look up the targeted member:
-    player_name = discord_server.get_member_named(player)
-    if player_name.id in players:
-        if players[player_name.id]['state'] == 'Alive':
+    player_object = discord_server.get_member_named(player)
+    if player_object.id in players:
+        if players[player_object.id]['state'] == 'Alive':
             game_state = get_yaml(GAME_STATE_FILE)
             round_number = game_state['Round']
             votes = get_yaml(VOTE_TRACKING_FILE)
             round_votes = votes[round_number]
-            round_votes[ctx.message.author.id] = player_name.id
+            round_votes[ctx.message.author.id] = player_object.id
             update_yaml_file(VOTE_TRACKING_FILE, round_votes, round_number)
-            if not player_name is None:
-                await ctx.channel.send(f"Your vote against {player_name.nick} has been noted.")
+            if not player_object is None:
+                await ctx.channel.send(f"Your vote against {player_object.nick} has been noted.")
             else:
                 await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
+                return
         else:
-            await ctx.channel.send(f"You are trying to vote {player}, but but this player is dead!")
+            await ctx.channel.send(f"You are trying to vote {player_object.nick}, but this player is dead!")
+            return
     else:
         await ctx.channel.send(f"You are trying to vote {player}, but such a player is not in the game!")
+        return
 
 @vote.error
 async def vote_error(ctx, error):
@@ -255,7 +265,6 @@ async def alliance(ctx, name, *args):
             await ctx.channel.send(f"You attempted to add the same player ({display_name}) twice.")
             return
 
-
         if player_object is None:
             await ctx.channel.send(f"Can't find '{to_add}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
             return
@@ -273,18 +282,15 @@ async def alliance(ctx, name, *args):
             return
         
         players_to_add.append(player_object)
-    print(players_to_add)
     if len(players_to_add)<3:
         await ctx.channel.send('An alliance may only be created for 3+ players (You + at least two more).')
         return
 
     category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
-    #admin_role = discord.utils.get(guild.roles, name = ENV_VARS['admin-role'])
 
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
         guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-    #    admin_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
     }
     
     for to_add in players_to_add:
@@ -302,80 +308,104 @@ async def alliance(ctx, name, *args):
     
     update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
 
+@bot.command("use")
+@commands.has_role(ENV_VARS["alive-role"])
+@commands.check(check_if_confessional)
+@require(state="IN_ROUND")
+async def use(ctx, item, *args):
+    await ctx.channel.send(f"Command is disabled.")
+    return
+    guild = ctx.guild
+    member = ctx.author
 
-# @bot.command("add_player")
-# @commands.has_role(ENV_VARS["alive-role"])
-# @require(state="IN_ROUND")
-# async def add_player(ctx, player):
+    live_players = get_yaml(PLAYER_FILE)
+    items = get_yaml(VOTE_TRACKING_FILE)
+    game_state = get_yaml(GAME_STATE_FILE)
 
-#     guild = ctx.guild
-    
-#     channel = ctx.channel
-    
-#     alliances = get_yaml(ALLIANCE_FILE)
+    round_number = game_state['Round']
+  
+    if not item.lower() in live_players[member.id]['inventory'].lower():
+        await ctx.channel.send(f"You are attempting to use {item}, but you don't have it in your inventory.")
+        return
+    elif item.lower() == 'extra vote':
+        if not len(args)==1:
+            ctx.channel.send('Exactly 1 target is allowed with an Extra Vote.')
+            return 
+        player_object = guild.get_member_named(args[0])
+        
+        if player_object is None:
+            await ctx.channel.send(f"Can't find your target '{args[0]}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
+            return
+        
+        if player_object.id in live_players:
+            if live_players[player_object.id]['state'] == 'Alive':
+                items[round_number][member.id].append(f'Extra Vote->{args}')
+                update_yaml_file(ITEM_TRACKING_FILE, items[round_number], round_number)
+                await ctx.channel.send(f"You have successfully used the {item} against {player_object.nick}.")
+            else:
+                await ctx.channel.send(f"You are trying to use the {item} on {player_object.nick}, but this player is dead!")
+                return
+        else:
+            await ctx.channel.send(f"You are trying to use the {item} on {player_object.nick}, but this user is not in the game!")
+            return
 
-#     if channel.id in alliances:
-#         alliance = alliances[channel.id]
-#         if alliance['state'] == 'unlocked':
+        
+    elif item.lower() == 'shield':
+        if len(args)>0:
+            ctx.channel.send('Shield requires no target but it will be used to protect you.')
+        
+        items[round_number][member.id].append(f'Shield')
+        update_yaml_file(ITEM_TRACKING_FILE, items[round_number], round_number)
+        await ctx.channel.send(f"You have successfully used the {item}. Two votes against you will be nullified tonight.")
+        
+    elif item.lower() == 'sword':
+        if not len(args)==1:
+            ctx.channel.send('Exactly 1 target is allowed with an Extra Vote.')
+            return
+        
+        player_object = guild.get_member_named(args[0])
+        
+        if player_object is None:
+            await ctx.channel.send(f"Can't find your target '{args[0]}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
+            return
+        
+        if player_object.id in live_players:
+            if live_players[player_object.id]['state'] == 'Alive':
+                items[round_number][member.id].append(f'Sword->{args}')
+                update_yaml_file(ITEM_TRACKING_FILE, items[round_number], round_number)
+                await ctx.channel.send(f"You have successfully used the {item} against {player_object.nick}. An additional vote will be cast on them.")
+            else:
+                await ctx.channel.send(f"You are trying to use the {item} on {player_object.nick}, but this player is dead!")
+                return
+        else:
+            await ctx.channel.send(f"You are trying to use the {item} on {player_object.nick}, but this user is not in the game!")
+            return
 
-#             live_players = get_yaml(PLAYER_FILE)
+    elif 'doll' in item.lower():
+        if len(args)>0:
+            ctx.channel.send('Doll requires no target but it will be used on the target it was created for.')
+        
+        # Need to figure this is the doll of who.
+        doll = item[:-5]
+        player_object = guild.get_member_named(doll)
 
-#             ### Tries to look up the targeted member:
-#             player_object = guild.get_member_named(player)
+        if player_object is None:
+            await ctx.channel.send(f"Can't figure out of who is this doll. If the name is spelled correctly please contact host ASAP.")
+            return
 
-#             if is_dead(player_object):
-#                 await channel.send("You are attempting to add a dead player to the alliance. They can't bet added.")
-#                 return
+        if player_object.id in live_players:
+            if live_players[player_object.id]['state'] == 'Alive':
+                items[round_number][member.id].append(f'{player_object.nick} Doll')
+                update_yaml_file(ITEM_TRACKING_FILE, items[round_number], round_number)
+                await ctx.channel.send(f"You have successfully used the {player_object.nick} Doll. An additional vote will be cast on them.")
+            else:
+                await ctx.channel.send(f"You are trying to use the {player_object.nick} Doll, but this player is dead, so sadly the doll is just a toy now!")
+                return
 
-#             if player_object is None:
-#                 await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
-#             elif player_object.name in alliance['members']:
-#                 await ctx.channel.send(f"{player_object} is already in this alliance.")
-#                 return
-#             elif player_object.id in live_players:
-#                 await ctx.channel.send(f"{player_object} has been noted.")
-#             else:
-#                 await ctx.channel.send(f"You are trying to add {player}, but such a player is not in the game!")
-#                 return
-            
-#             alliance['members'].append(player_object.name)
-#             update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
-
-#         else: # if alliance is locked
-#             return
-#     else: # if command called not in an alliance chat
-#         return
-
-
-# @bot.command("open_alliance")
-# @commands.has_role(ENV_VARS["alive-role"])
-# @require(state="IN_ROUND")
-# async def open_alliance(ctx):
-    
-#     guild = ctx.guild
-#     channel = ctx.channel
-    
-#     alliances = get_yaml(ALLIANCE_FILE)
-
-#     if channel.id in alliances:
-#         alliance = alliances[channel.id]
-#         if alliance['state'] == 'unlocked':
-
-#             print(alliances)
-#             for player in alliance["members"]:
-
-#                 player_object = guild.get_member_named(player)
-
-#                 await channel.set_permissions(player_object, send_messages=True, read_messages=True)
-
-#             alliance['state'] = 'open'
-#             update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
-#         else:
-#             return
-#     else:
-#         return
-
-
+    else:
+        ctx.channel.send('The item is found in your inventory but I cannot recognise what item this is :(. If you see this error please @ the Hosts ASAP, they need to help you and me <3.')
+        return
+        
 
 
 ### Start bot
