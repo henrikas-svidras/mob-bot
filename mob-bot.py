@@ -81,11 +81,13 @@ async def register_player(ctx, player, role):
             "name": player_object.nick if not player_object.nick is None else player_object.name,
             "role": role,
             "state": "Alive",
-            "inventory": []
+            "inventory": [],
+            "confessional-id":0,
+            "submission-id":0
         }
         live_roles.append(role)
         update_yaml_file(PLAYER_FILE, player_params, player_object.id)
-        alive_role = discord.utils.get(discord_server.roles, name=ENV_VARS['alive_role'])
+        alive_role = discord.utils.get(discord_server.roles, id=ENV_VARS['alive-role'])
         await player_object.add_roles(alive_role) #adds the role
         await ctx.channel.send(f"{player_params['name']} is added, with the role {player_params['role']}.")
       
@@ -162,7 +164,8 @@ async def kill_player(ctx, player):
     else:
         player = live_players[player_object.id]
         if player["state"] == "Alive":
-            await ctx.channel.send(f"{player_object.name} will be killed (moved to 'Dead' role)")
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+            await ctx.channel.send(f"{display_name} will be killed (moved to 'Dead' role)")
             player["state"] = 'Dead'
             update_yaml_file(PLAYER_FILE, player, player_object.id)
             for alliance, stats in alliances.items():
@@ -179,8 +182,8 @@ async def kill_player(ctx, player):
 
 
                 update_yaml_file(ALLIANCE_FILE, stats, alliance)
-            alive_role = discord.utils.get(discord_server.roles, name=ENV_VARS['alive-role'])
-            dead_role = discord.utils.get(discord_server.roles, name=ENV_VARS['dead-role'])
+            alive_role = discord.utils.get(discord_server.roles, id=ENV_VARS['alive-role'])
+            dead_role = discord.utils.get(discord_server.roles, id=ENV_VARS['dead-role'])
             await player_object.remove_roles(alive_role) #adds the role
             await player_object.add_roles(dead_role) #adds the role
 
@@ -201,7 +204,9 @@ async def print_vote(ctx, round=None):
     for voter, votee in votes[round].items(): 
         voter_object = discord_server.get_member(voter)
         votee_object = discord_server.get_member(votee)
-        await ctx.channel.send(f'{voter_object.name}: {votee_object.name}')
+        voter_name = voter_object.nick if not voter_object.nick is None else voter_object.name
+        votee_name = votee_object.nick if not votee_object.nick is None else votee_object.name
+        await ctx.channel.send(f'{voter_name}: {votee_name}')
     
 # Commands for players
 
@@ -225,12 +230,14 @@ async def vote(ctx, player):
             round_votes[ctx.message.author.id] = player_object.id
             update_yaml_file(VOTE_TRACKING_FILE, round_votes, round_number)
             if not player_object is None:
-                await ctx.channel.send(f"Your vote against {player_object.nick} has been noted.")
+                display_name = player_object.nick if not player_object.nick is None else player_object.name
+                await ctx.channel.send(f"Your vote against {display_name} has been noted.")
             else:
                 await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
                 return
         else:
-            await ctx.channel.send(f"You are trying to vote {player_object.nick}, but this player is dead!")
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+            await ctx.channel.send(f"You are trying to vote {display_name}, but this player is dead!")
             return
     else:
         await ctx.channel.send(f"You are trying to vote {player}, but such a player is not in the game!")
@@ -287,10 +294,11 @@ async def alliance(ctx, name, *args):
         return
 
     category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
-
+    spectator = discord.utils.get(guild.roles, id=ENV_VARS['spectator-role'])
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
         guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+        spectator: discord.PermissionOverwrite(read_messages=True, send_messages=False)
     }
     
     for to_add in players_to_add:
@@ -299,11 +307,13 @@ async def alliance(ctx, name, *args):
     channel = await guild.create_text_channel(name, category=category, overwrites=overwrites)
     
     await channel.edit(topic=f'{players_to_add}')
+    display_name = member.nick if not member.nick is None else member.name
+    await channel.send(f'Requested by {display_name}')
 
     alliance = {
         'name': name,
         'state': 'open',
-        'members':[p.id for p in players_to_add],
+        'members':[p.id for p in players_to_add]
     }
     
     update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
