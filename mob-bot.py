@@ -1,5 +1,4 @@
 
-from discord import player
 from mob_library.helpers import is_dead
 import discord
 from discord.ext import commands
@@ -41,7 +40,9 @@ def check_if_confessional(ctx):
     return ctx.channel.category.id == ENV_VARS['confessional-chats']
 
 def check_if_host_chats(ctx):
-    return ctx.channel.category.id == ENV_VARS['host-chats']
+    print(ENV_VARS['host-chats'])
+    print(ctx.channel.id)
+    return ctx.channel.id == ENV_VARS['host-chats']
 
 ### Discord bot stuff
 intents = discord.Intents.default()
@@ -429,7 +430,84 @@ async def use(ctx, item, *args):
     else:
         ctx.channel.send('The item is found in your inventory but I cannot recognise what item this is :(. If you see this error please @ the Hosts ASAP, they need to help you and me <3.')
         return
-        
+
+
+@bot.command("execute", hidden=True)
+@commands.check(check_if_confessional)
+async def execute(ctx):
+    return
+
+    guild = ctx.guild
+    caller = ctx.author
+
+    players = get_yaml(ENV_VARS['player-file'])
+
+    caller_dict = players[caller.id]
+
+    caller_role = caller_dict['role']
+    #caller_sub_channel = caller_dict['submission-id']
+
+    if not caller_role == "Executioner":
+        await ctx.channel.send("You are not the Executioner.")
+        return
+    else:
+        abilities_channel_id = ENV_VARS['abilities_channel']
+        abilities_channel = discord.utils.get(guild.channels, id = abilities_channel_id)
+
+        display_name = caller.nick if not caller.nick is None else caller.name
+
+        await abilities_channel.send(f"{display_name} has used the Executioner ability.")
+        await ctx.channel.send("You have used the Executioner ability.\nYou can use ^cancel to cancel the ability use.")
+
+        #await caller_sub_channel.edit(topic=f'Executioner Rol')
+
+@bot.command("cancel", hidden=True)
+async def cancel(ctx):
+    return
+
+    guild = ctx.guild
+    caller = ctx.author
+
+    abilities_channel_id = ENV_VARS['abilities_channel']
+    abilities_channel = discord.utils.get(guild.channels, id = abilities_channel_id)
+
+    display_name = caller.nick if not caller.nick is None else caller.name
+
+
+    await abilities_channel.send(f"{display_name} is cancelling their ability.")
+    await ctx.channel.send("Your ability use cancelling has been noted.")
+
+@bot.command("enchant", hidden=True)
+async def enchant(ctx, player):
+
+    return
+
+    guild = ctx.guild
+
+    player_object = guild.get_member_named(player)
+
+    players = get_yaml(ENV_VARS['player-file'])
+
+    player_dict = players[player_object.id]
+
+    player_submission_channel_id = player_dict['submission-id']
+
+    player_submission_channel = discord.utils.get(guild.channels, id = player_submission_channel_id)
+
+    #if else
+
+    await player_submission_channel.send("An Enchanter has restored you an ability use.")
+
+
+
+    
+
+
+
+
+
+    
+
 bot.help_command = commands.DefaultHelpCommand(verify_checks=False, no_category='Player commands')
 
 ### Start bot
