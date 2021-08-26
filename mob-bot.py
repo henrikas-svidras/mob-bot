@@ -40,6 +40,9 @@ AVAILABLE_ROLES = ENV_VARS['available-roles']
 def check_if_confessional(ctx):
     return ctx.channel.category.id == ENV_VARS['confessional-chats']
 
+def check_if_host_chats(ctx):
+    return ctx.channel.category.id == ENV_VARS['host-chats']
+
 ### Discord bot stuff
 intents = discord.Intents.default()
 intents.members = True
@@ -49,7 +52,7 @@ bot = commands.Bot(command_prefix='^', intents=intents)
 
 # Commands to use before the game
 
-@bot.command("register_player")
+@bot.command("register_player", hidden=True)
 @commands.has_permissions(administrator=True)
 @require(state="PRE_GAME")
 async def register_player(ctx, player, role):
@@ -98,7 +101,7 @@ async def register_player_error(ctx, error):
 
 # Commands to start a round
 
-@bot.command("begin_round")
+@bot.command("begin_round", hidden=True)
 @commands.has_permissions(administrator=True)
 @require(state=["INTER_ROUND","PRE_GAME"])
 async def begin_round(ctx):
@@ -130,7 +133,7 @@ async def begin_round_error(ctx, error):
 
 # Commands to stop a round
 
-@bot.command("stop_round")
+@bot.command("stop_round", hidden=True)
 @commands.has_permissions(administrator=True)
 @require(state="IN_ROUND")
 async def stop_round(ctx):
@@ -142,7 +145,7 @@ async def stop_round_error(ctx, error):
     if isinstance(error, commands.DisabledCommand):
         await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is already stopped.')
 
-@bot.command("kill_player")
+@bot.command("kill_player", hidden=True)
 @commands.has_permissions(administrator=True)
 @require(state="INTER_ROUND")
 async def kill_player(ctx, player):
@@ -190,9 +193,8 @@ async def kill_player(ctx, player):
         else:
             await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
 
-    
-
-@bot.command("print_vote")
+@bot.command("print_vote", hidden=True)
+@commands.check(check_if_host_chats)
 @commands.has_permissions(administrator=True)
 async def print_vote(ctx, round=None):
     discord_server = ctx.guild
@@ -210,10 +212,15 @@ async def print_vote(ctx, round=None):
     
 # Commands for players
 
-@bot.command("vote")
+@bot.command("vote", hidden=False)
 @commands.has_role(ENV_VARS["alive-role"])
 @require(state="IN_ROUND")
 async def vote(ctx, player):
+    """A command to vote against another player
+    Usage example:
+        ^vote player1
+    You do not need to @ the player. Simply put their nickname, as you see them in the server.
+    """
 
     discord_server = ctx.guild
     
@@ -248,11 +255,18 @@ async def vote_error(ctx, error):
    if isinstance(error, commands.DisabledCommand):
        await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is over.')
 
-@bot.command("alliance")
+@bot.command("alliance", hidden=False)
 @commands.has_role(ENV_VARS["alive-role"])
 @commands.check(check_if_confessional)
 @require(state="IN_ROUND")
 async def alliance(ctx, name, *args):
+    """A command to make an alliance
+    Usage example:
+        ^alliance "My new cool alliance" player1 player2 ...
+    * You do not need to @ the players. Simply put their nickname, as you see them in the server.
+    * You need at least 2 people other than you. You don't have to list yourself.
+    * Make sure that the alliance name goes first and is in quotes.
+    """
 
     guild = ctx.guild
     member = ctx.author
@@ -306,7 +320,7 @@ async def alliance(ctx, name, *args):
 
     channel = await guild.create_text_channel(name, category=category, overwrites=overwrites)
     
-    await channel.edit(topic=f'{players_to_add}')
+    #await channel.edit(topic=f'{players_to_add}')
     display_name = member.nick if not member.nick is None else member.name
     await channel.send(f'Requested by {display_name}')
 
@@ -318,7 +332,7 @@ async def alliance(ctx, name, *args):
     
     update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
 
-@bot.command("use")
+@bot.command("use", hidden=True)
 @commands.has_role(ENV_VARS["alive-role"])
 @commands.check(check_if_confessional)
 @require(state="IN_ROUND")
@@ -416,7 +430,7 @@ async def use(ctx, item, *args):
         ctx.channel.send('The item is found in your inventory but I cannot recognise what item this is :(. If you see this error please @ the Hosts ASAP, they need to help you and me <3.')
         return
         
-
+bot.help_command = commands.DefaultHelpCommand(verify_checks=False, no_category='Player commands')
 
 ### Start bot
 bot.run(TOKEN)
