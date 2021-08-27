@@ -5,6 +5,7 @@
   role: Executioner
   state: Alive
   confessional-id: 879053125242204240
+  ability-uses: 1
 207981536782319618:
   submission-id: 880122476854640700
   inventory: []
@@ -12,6 +13,7 @@
   role: Ranger
   state: Alive
   confessional-id: 880119695754285106
+  ability-uses: 1
 277931851312791554:
   submission-id: 879051304918474862
   inventory: []
@@ -19,6 +21,7 @@
   role: Scavenger
   state: Alive
   confessional-id: 879052217653530664
+  ability-uses: 1
 347113032385822721:
   submission-id: 879051576969416714
   inventory: []
@@ -26,6 +29,7 @@
   role: Voodoo
   state: Alive
   confessional-id: 879053025992396840
+  ability-uses: 1
 351920971453693964:
   submission-id: 879051626940354560
   inventory: []
@@ -33,6 +37,7 @@
   role: Wyvern
   state: Alive
   confessional-id: 879053084205129828
+  ability-uses: 1
 360830804504477707:
   submission-id: 879051351856918579
   inventory: []
@@ -40,6 +45,7 @@
   role: Snitch
   state: Alive
   confessional-id: 879052281121742858
+  ability-uses: 1
 365171952693805056:
   submission-id: 880122456289996821
   inventory: []
@@ -47,6 +53,7 @@
   role: Chameleon
   state: Alive
   confessional-id: 880119678465376366
+  ability-uses: 1
 404725531150516234:
   submission-id: 879043981848219668
   inventory: []
@@ -54,6 +61,7 @@
   role: Auctioneer
   state: Alive
   confessional-id: 879052200201048135
+  ability-uses: 1
 530048576454393862:
   submission-id: 880121569320501260
   inventory: []
@@ -61,6 +69,7 @@
   role: Basilisk
   state: Alive
   confessional-id: 879052256765440120
+  ability-uses: 1
 560820749992984597:
   submission-id: 879051855538303037
   inventory: []
@@ -68,6 +77,7 @@
   role: Parasite
   state: Alive
   confessional-id: 879053184167976960
+  ability-uses: 1
 603320196903469194:
   submission-id: 879051555586854923
   inventory: []
@@ -75,6 +85,7 @@
   role: Assassin
   state: Alive
   confessional-id: 879052997076852736
+  ability-uses: 1
 638649154826010664:
   submission-id: 880121703961866260
   inventory: []
@@ -82,6 +93,7 @@
   role: Enchanter
   state: Alive
   confessional-id: 879052967364423792
+  ability-uses: 1
 676270088017543168:
   submission-id: 879051428822388736
   inventory: []
@@ -89,6 +101,7 @@
   role: Chef
   state: Alive
   confessional-id: 879052236016197672
+  ability-uses: 1
 697270660187029505:
   submission-id: 879051907254063104
   inventory: []
@@ -96,6 +109,7 @@
   role: Pacifist
   state: Alive
   confessional-id: 879052918152654889
+  ability-uses: 1
 725823265087422495:
   submission-id: 879051656183042088
   inventory: []
@@ -103,6 +117,7 @@
   role: Hunter
   state: Alive
   confessional-id: 879053104446865478
+  ability-uses: 1
 765968317294313492:
   submission-id: 879051755298639882
   inventory: []
@@ -110,6 +125,7 @@
   role: Detective
   state: Alive
   confessional-id: 879053166426075196
+  ability-uses: 1
 820745177710723124:
   submission-id: 879043941419327528
   inventory: []
@@ -117,6 +133,7 @@
   role: Artisan
   state: Alive
   confessional-id: 879052138246975579
+  ability-uses: 1
 872945943551557632:
   submission-id: 879051700747513856
   inventory: []
@@ -124,3 +141,4 @@
   role: Necromancer
   state: Alive
   confessional-id: 879053142782803978
+  ability-uses: 1

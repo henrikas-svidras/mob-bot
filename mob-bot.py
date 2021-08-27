@@ -240,6 +240,7 @@ async def vote(ctx, player):
             if not player_object is None:
                 display_name = player_object.nick if not player_object.nick is None else player_object.name
                 await ctx.channel.send(f"Your vote against {display_name} has been noted.")
+                await ctx.message.pin()
             else:
                 await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
                 return
@@ -461,6 +462,18 @@ async def execute(ctx):
 
         #await caller_sub_channel.edit(topic=f'Executioner Rol')
 
+        # Pakeisti žaidėjo role uses left
+        players = get_yaml(ENV_VARS['player-file'])
+        caller_dict = players[caller.id]
+
+        caller_dict['ability-uses'] += 1 #(padidina per 1) Galėtum rašyti ir player_dict['ability-uses'] = player_dict['ability-uses'] + 1 , bet taip ppaprasčiau
+
+        # naudoji metodą (update_yaml_file (aš pats parašiau))
+        # pirmas argumentas yra failas, šiuo atveju reik pakeist players file, tai nurodai kaip jis vadinasi, pavadinimas išsaugotas PLAYER_FILE
+        # antras argumentas player_dict. Jį mes prieš 3 eilutes pakeitėme kad turėtų naują skaičių abilities
+        # trečias argumentas žaidėjo ID. Čia kaip to dictionary "key". Visi key dabar yra žaidėjų ID.
+        update_yaml_file(PLAYER_FILE, caller_dict, caller.id)
+
 @bot.command("cancel", hidden=True)
 async def cancel(ctx):
     return
@@ -477,12 +490,25 @@ async def cancel(ctx):
     await abilities_channel.send(f"{display_name} is cancelling their ability.")
     await ctx.channel.send("Your ability use cancelling has been noted.")
 
+    # Pakeisti žaidėjo role uses left
+    players = get_yaml(ENV_VARS['player-file'])
+    caller_dict = players[caller.id]
+
+    caller_dict['ability-uses'] += 1 #(padidina per 1) Galėtum rašyti ir player_dict['ability-uses'] = player_dict['ability-uses'] + 1 , bet taip ppaprasčiau
+
+    # naudoji metodą (update_yaml_file (aš pats parašiau))
+    # pirmas argumentas yra failas, šiuo atveju reik pakeist players file, tai nurodai kaip jis vadinasi, pavadinimas išsaugotas PLAYER_FILE
+    # antras argumentas player_dict. Jį mes prieš 3 eilutes pakeitėme kad turėtų naują skaičių abilities
+    # trečias argumentas žaidėjo ID. Čia kaip to dictionary "key".
+    update_yaml_file(PLAYER_FILE, caller_dict, caller.id)
+
 @bot.command("enchant", hidden=True)
 async def enchant(ctx, player):
 
     return
 
     guild = ctx.guild
+    caller = ctx.author
 
     player_object = guild.get_member_named(player)
 
@@ -497,6 +523,16 @@ async def enchant(ctx, player):
     #if else
 
     await player_submission_channel.send("An Enchanter has restored you an ability use.")
+
+    # Pakeisti žaidėjo role uses left
+    caller_dict = players[caller.id] 
+    caller_dict['ability-uses'] -= 1 #(sumažina per 1)
+
+    # naudoji metodą (update_yaml_file (aš pats parašiau))
+    # pirmas argumentas yra failas, šiuo atveju reik pakeist players file, tai nurodai kaip jis vadinasi, pavadinimas išsaugotas PLAYER_FILE
+    # antras argumentas player_dict. Jį mes prieš 3 eilutes pakeitėme kad turėtų naują skaičių abilities
+    # trečias argumentas žaidėjo ID. Čia kaip to dictionary "key".
+    update_yaml_file(PLAYER_FILE, caller_dict, caller.id)
 
 
 
