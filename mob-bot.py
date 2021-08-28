@@ -194,6 +194,44 @@ async def kill_player(ctx, player):
         else:
             await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
 
+@bot.command("revive_player", hidden=True)
+@commands.has_permissions(administrator=True)
+@require(state="IN_ROUND")
+async def revive_player(ctx, player):
+    discord_server = ctx.guild
+
+    player_object = discord_server.get_member_named(player)
+    live_players = get_yaml(PLAYER_FILE)
+
+    if player_object is None:
+        await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?")
+        return
+    elif not player_object.id in live_players: 
+        await ctx.channel.send(f"{player} is found in server but not playing!")
+        return
+    else:
+        player = live_players[player_object.id]
+        if player["state"] == "Alive":
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+
+            await ctx.channel.send(f"{display_name} is alive, can't revive.")
+        else:
+            player["state"] = 'Alive'
+            player["role"] = 'None'
+            update_yaml_file(PLAYER_FILE, player, player_object.id)
+            alive_role = discord.utils.get(discord_server.roles, id=ENV_VARS['alive-role'])
+            dead_role = discord.utils.get(discord_server.roles, id=ENV_VARS['dead-role'])
+            await player_object.remove_roles(dead_role) #adds the role
+            await player_object.add_roles(alive_role) #adds the role
+
+            submission_channel = discord.utils.get(discord_server.channels, id=player["submission-id"])
+            await submission_channel.send(f"{player_object.mention} You have been reviven by the Necromancer!")
+
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+
+            await ctx.channel.send(f"{display_name} has been reviven.")
+
+
 @bot.command("print_vote", hidden=True)
 @commands.check(check_if_host_chats)
 @commands.has_permissions(administrator=True)
@@ -203,13 +241,20 @@ async def print_vote(ctx, round=None):
         round = get_yaml(GAME_STATE_FILE)['Round']
 
     votes = get_yaml(VOTE_TRACKING_FILE)
-
+    players = get_yaml(PLAYER_FILE)
+    message = ''
     for voter, votee in votes[round].items(): 
         voter_object = discord_server.get_member(voter)
         votee_object = discord_server.get_member(votee)
         voter_name = voter_object.nick if not voter_object.nick is None else voter_object.name
         votee_name = votee_object.nick if not votee_object.nick is None else votee_object.name
-        await ctx.channel.send(f'{voter_name}: {votee_name}')
+        if players[voter_object.id]['state'] == 'Dead':
+            continue
+        elif players[voter_object.id]['role'] == 'Parasite':
+            message += f'{voter_name}: N/A\n'
+        else:
+            message += f'{voter_name}: {votee_name}\n'
+    await ctx.channel.send(message)
     
 # Commands for players
 
@@ -229,21 +274,26 @@ async def vote(ctx, player):
 
     ### Tries to look up the targeted member:
     player_object = discord_server.get_member_named(player)
+
+    if player_object is None:
+        await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly? That also includes case sensitivity. \nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
+        return
+
     if player_object.id in players:
         if players[player_object.id]['state'] == 'Alive':
-            game_state = get_yaml(GAME_STATE_FILE)
-            round_number = game_state['Round']
-            votes = get_yaml(VOTE_TRACKING_FILE)
-            round_votes = votes[round_number]
-            round_votes[ctx.message.author.id] = player_object.id
-            update_yaml_file(VOTE_TRACKING_FILE, round_votes, round_number)
-            if not player_object is None:
+            if players[player_object.id]['role'] == 'Parasite':
+                await ctx.channel.send(f"The Parasite does not have a regular vote.")
+            else:
+                game_state = get_yaml(GAME_STATE_FILE)
+                round_number = game_state['Round']
+                votes = get_yaml(VOTE_TRACKING_FILE)
+                round_votes = votes[round_number]
+                round_votes[ctx.message.author.id] = player_object.id
+                update_yaml_file(VOTE_TRACKING_FILE, round_votes, round_number)
                 display_name = player_object.nick if not player_object.nick is None else player_object.name
                 await ctx.channel.send(f"Your vote against {display_name} has been noted.")
                 await ctx.message.pin()
-            else:
-                await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
-                return
+
         else:
             display_name = player_object.nick if not player_object.nick is None else player_object.name
             await ctx.channel.send(f"You are trying to vote {display_name}, but this player is dead!")
@@ -274,6 +324,7 @@ async def alliance(ctx, name, *args):
     member = ctx.author
 
     live_players = get_yaml(PLAYER_FILE)
+    round = get_yaml(GAME_STATE_FILE)['Round']
     
     players_to_add = []
     players_to_add.append(member)
@@ -317,14 +368,24 @@ async def alliance(ctx, name, *args):
         spectator: discord.PermissionOverwrite(read_messages=True, send_messages=False)
     }
     
+    channel_topic = '**'
     for to_add in players_to_add:
         overwrites[to_add] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
+        display_name = to_add.nick if not to_add.nick is None else to_add.name
+        channel_topic += display_name
+        channel_topic += ', '
+    #Remove last comma and space:
+    channel_topic = channel_topic[:-2]
+    channel_topic += f'** (Round {round})'
+    
     channel = await guild.create_text_channel(name, category=category, overwrites=overwrites)
     
-    #await channel.edit(topic=f'{players_to_add}')
+    
+    await channel.edit(topic=channel_topic)
+    alive_role = discord.utils.get(guild.roles, id=ENV_VARS["alive-role"])
     display_name = member.nick if not member.nick is None else member.name
-    await channel.send(f'Requested by {display_name}')
+    await channel.send(f'{alive_role.mention} Requested by {display_name}')
 
     alliance = {
         'name': name,
