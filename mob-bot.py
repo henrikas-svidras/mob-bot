@@ -4,6 +4,8 @@ import discord
 from discord.ext import commands
 import yaml
 
+import time 
+
 from mob_library.caching import get_yaml, smart_create_file, update_yaml_file
 from mob_library.decorators import require
 
@@ -176,13 +178,14 @@ async def kill_player(ctx, player):
                 if player_object.id in stats['members']:
                     stats['members'].remove(player_object.id)
 
-                    alliance_channel = discord.utils.get(category.channels, id=alliance)
+                    alliance_channel = discord.utils.get(discord_server.channels, id=alliance)
 
                     overwrite = discord.PermissionOverwrite()
                     overwrite.send_messages = False
                     overwrite.read_messages = False
 
                     await alliance_channel.set_permissions(player_object, overwrite=overwrite)
+                    await alliance_channel.send(f"***{display_name} removed***")
 
 
                 update_yaml_file(ALLIANCE_FILE, stats, alliance)
@@ -193,6 +196,38 @@ async def kill_player(ctx, player):
 
         else:
             await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
+
+@bot.command("test", hidden=True)
+@commands.has_permissions(administrator=True)
+async def test(ctx, message_id):
+    return
+    discord_server = ctx.guild
+    message = await ctx.fetch_message(message_id)
+    live_players = get_yaml(PLAYER_FILE)
+
+    if message is None:
+        await ctx.channel.send(f"Didn't find it rip")
+        return
+    else:
+        await ctx.channel.send(f"Found the message {message_id}")
+    file_to_send = await message.attachments[0].to_file()
+
+    await ctx.channel.send(f"Will now send it for all players")
+
+    for player in live_players.values():
+        if player['state'] == 'Alive':
+            time.sleep(0.5) # TO avoid being treated as spamming and getting rate limited
+            confessional_channel = discord.utils.get(discord_server.channels, id=player['confessional-id'])
+            submission_channel = discord.utils.get(discord_server.channels, id=player['submission-id'])
+            msg = await confessional_channel.send(file=file_to_send)
+            await msg.pin()
+            msg = await submission_channel.send(file=file_to_send)
+            await msg.pin()
+    
+    await ctx.channel.send("Sent to all Alive players.")
+
+
+    
 
 @bot.command("revive_player", hidden=True)
 @commands.has_permissions(administrator=True)
@@ -242,7 +277,7 @@ async def print_vote(ctx, round=None):
 
     votes = get_yaml(VOTE_TRACKING_FILE)
     players = get_yaml(PLAYER_FILE)
-    message = ''
+    message_dic = {}
     for voter, votee in votes[round].items(): 
         voter_object = discord_server.get_member(voter)
         votee_object = discord_server.get_member(votee)
@@ -251,9 +286,14 @@ async def print_vote(ctx, round=None):
         if players[voter_object.id]['state'] == 'Dead':
             continue
         elif players[voter_object.id]['role'] == 'Parasite':
-            message += f'{voter_name}: N/A\n'
+            message_dic[f'{voter_name}'] = 'N/A\n'
         else:
-            message += f'{voter_name}: {votee_name}\n'
+            message_dic[f'{voter_name}'] = f'{votee_name}\n'
+    
+    message = ''
+    for voter in sorted(message_dic):
+        message += f'{voter}: {message_dic[voter]}'
+
     await ctx.channel.send(message)
     
 # Commands for players
@@ -281,7 +321,7 @@ async def vote(ctx, player):
 
     if player_object.id in players:
         if players[player_object.id]['state'] == 'Alive':
-            if players[player_object.id]['role'] == 'Parasite':
+            if players[ctx.author.id]['role'] == 'Parasite':
                 await ctx.channel.send(f"The Parasite does not have a regular vote.")
             else:
                 game_state = get_yaml(GAME_STATE_FILE)
