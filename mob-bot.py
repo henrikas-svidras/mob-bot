@@ -248,6 +248,20 @@ async def find_player_nick(ctx, player):
     display_name = player_object.nick if not player_object.nick is None else player_object.name
     await ctx.channel.send(f"yo I found {display_name}")
 
+@bot.command("announce", hidden=True)
+@commands.has_permissions(administrator=True)
+async def find_player_nick(ctx, message_id:int, channel_id:int=None):
+    discord_server = ctx.guild
+    if channel_id is None:
+        channel = ctx.channel
+    else:
+        channel = discord.utils.get(discord_server.channels, id=channel_id)
+    message = await ctx.fetch_message(message_id)
+
+    await channel.send(message.content)
+
+
+ 
 @bot.command("revive_player", hidden=True)
 @commands.has_permissions(administrator=True)
 @require(state="IN_ROUND")
@@ -401,11 +415,6 @@ async def alliance(ctx, name, *args):
         if player_object == member:
             continue
 
-        if player_object in players_to_add:
-            display_name = player_object.nick if not player_object.nick is None else player_object.name
-            await ctx.channel.send(f"You attempted to add the same player ({display_name}) twice.")
-            return
-
         if player_object is None:
             name_variants = get_yaml('name-variants.yaml')
             if to_add in name_variants:
@@ -413,6 +422,11 @@ async def alliance(ctx, name, *args):
             else:
                 await ctx.channel.send(f"Can't find '{to_add}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
                 return
+        
+        if player_object in players_to_add:
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+            await ctx.channel.send(f"You attempted to add the same player ({display_name}) twice.")
+            return
 
         if is_dead(player_object):
             display_name = player_object.nick if not player_object.nick is None else player_object.name
