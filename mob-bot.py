@@ -159,11 +159,14 @@ async def kill_player(ctx, player):
     player_object = discord_server.get_member_named(player)
     live_players = get_yaml(PLAYER_FILE)
     alliances = get_yaml(ALLIANCE_FILE)
-    category = discord.utils.get(discord_server.categories, id=ENV_VARS['alliance-chats'])
 
     if player_object is None:
-        await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?")
-        return
+        name_variants = get_yaml('name-variants.yaml')
+        if player in name_variants:
+            player_object = discord_server.get_member_named(name_variants[player])
+        else:
+            await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
+            return
     elif not player_object.id in live_players: 
         await ctx.channel.send(f"{player} is found in server but not playing!")
         return
@@ -197,37 +200,53 @@ async def kill_player(ctx, player):
         else:
             await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
 
-@bot.command("test", hidden=True)
+@bot.command("send_all", hidden=True)
 @commands.has_permissions(administrator=True)
 async def test(ctx, message_id):
-    return
+    
     discord_server = ctx.guild
     message = await ctx.fetch_message(message_id)
     live_players = get_yaml(PLAYER_FILE)
 
     if message is None:
-        await ctx.channel.send(f"Didn't find it rip")
+        await ctx.channel.send(f"Didn't find the picture rip")
         return
     else:
         await ctx.channel.send(f"Found the message {message_id}")
     file_to_send = await message.attachments[0].to_file()
 
     await ctx.channel.send(f"Will now send it for all players")
-
+ 
     for player in live_players.values():
         if player['state'] == 'Alive':
-            time.sleep(0.5) # TO avoid being treated as spamming and getting rate limited
+            time.sleep(0.1) # TO avoid being treated as spamming and getting rate limited
             confessional_channel = discord.utils.get(discord_server.channels, id=player['confessional-id'])
             submission_channel = discord.utils.get(discord_server.channels, id=player['submission-id'])
+            file_to_send = await message.attachments[0].to_file()
+
             msg = await confessional_channel.send(file=file_to_send)
             await msg.pin()
+            file_to_send = await message.attachments[0].to_file()
             msg = await submission_channel.send(file=file_to_send)
             await msg.pin()
     
     await ctx.channel.send("Sent to all Alive players.")
 
 
-    
+@bot.command("find_player_nick", hidden=True)
+@commands.has_permissions(administrator=True)
+async def find_player_nick(ctx, player):
+    discord_server = ctx.guild
+    player_object = discord_server.get_member_named(player)
+    if player_object is None:
+        name_variants = get_yaml('name-variants.yaml')
+        if player in name_variants:
+            player_object = discord_server.get_member_named(name_variants[player])
+        else:
+            await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
+            return
+    display_name = player_object.nick if not player_object.nick is None else player_object.name
+    await ctx.channel.send(f"yo I found {display_name}")
 
 @bot.command("revive_player", hidden=True)
 @commands.has_permissions(administrator=True)
@@ -239,8 +258,12 @@ async def revive_player(ctx, player):
     live_players = get_yaml(PLAYER_FILE)
 
     if player_object is None:
-        await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?")
-        return
+        name_variants = get_yaml('name-variants.yaml')
+        if player in name_variants:
+            player_object = discord_server.get_member_named(name_variants[player])
+        else:
+            await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
+            return
     elif not player_object.id in live_players: 
         await ctx.channel.send(f"{player} is found in server but not playing!")
         return
@@ -316,8 +339,12 @@ async def vote(ctx, player):
     player_object = discord_server.get_member_named(player)
 
     if player_object is None:
-        await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly? That also includes case sensitivity. \nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
-        return
+        name_variants = get_yaml('name-variants.yaml')
+        if player in name_variants:
+            player_object = discord_server.get_member_named(name_variants[player])
+        else:
+            await ctx.channel.send(f"Can't find '{player}'. Maybe you spelled the name incorrectly? That also includes case sensitivity. \nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
+            return
 
     if player_object.id in players:
         if players[player_object.id]['state'] == 'Alive':
@@ -380,8 +407,12 @@ async def alliance(ctx, name, *args):
             return
 
         if player_object is None:
-            await ctx.channel.send(f"Can't find '{to_add}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
-            return
+            name_variants = get_yaml('name-variants.yaml')
+            if to_add in name_variants:
+                player_object = guild.get_member_named(name_variants[to_add])
+            else:
+                await ctx.channel.send(f"Can't find '{to_add}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP.")
+                return
 
         if is_dead(player_object):
             display_name = player_object.nick if not player_object.nick is None else player_object.name
