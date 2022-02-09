@@ -1,144 +1,144 @@
 164115821784858624:
-  submission-id: 879051836450025543
+  ability-uses: 1
+  confessional-id: 879053125242204240
   inventory: []
   name: Swift
   role: Executioner
-  state: Alive
-  confessional-id: 879053125242204240
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051836450025543
 207981536782319618:
-  submission-id: 880122476854640700
+  ability-uses: 1
+  confessional-id: 880119695754285106
   inventory: []
   name: 4WindSushi
-  role: Ranger
-  state: Alive
-  confessional-id: 880119695754285106
-  ability-uses: 1
+  role: None
+  state: Dead
+  submission-id: 880122476854640700
 277931851312791554:
-  submission-id: 879051304918474862
+  ability-uses: 1
+  confessional-id: 879052217653530664
   inventory: []
   name: Creeper
   role: Scavenger
-  state: Alive
-  confessional-id: 879052217653530664
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051304918474862
 347113032385822721:
-  submission-id: 879051576969416714
+  ability-uses: 1
+  confessional-id: 879053025992396840
   inventory: []
   name: Pizza
   role: Voodoo
-  state: Alive
-  confessional-id: 879053025992396840
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051576969416714
 351920971453693964:
-  submission-id: 879051626940354560
+  ability-uses: 1
+  confessional-id: 879053084205129828
   inventory: []
   name: Shib
   role: Wyvern
   state: Alive
-  confessional-id: 879053084205129828
-  ability-uses: 1
+  submission-id: 879051626940354560
 360830804504477707:
-  submission-id: 879051351856918579
+  ability-uses: 1
+  confessional-id: 879052281121742858
   inventory: []
   name: Disc
   role: Snitch
-  state: Alive
-  confessional-id: 879052281121742858
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051351856918579
 365171952693805056:
-  submission-id: 880122456289996821
+  ability-uses: 1
+  confessional-id: 880119678465376366
   inventory: []
   name: Ali
   role: Chameleon
-  state: Alive
-  confessional-id: 880119678465376366
-  ability-uses: 1
+  state: Dead
+  submission-id: 880122456289996821
 404725531150516234:
-  submission-id: 879043981848219668
+  ability-uses: 1
+  confessional-id: 879052200201048135
   inventory: []
   name: Cinnamon
   role: Auctioneer
-  state: Alive
-  confessional-id: 879052200201048135
-  ability-uses: 1
+  state: Dead
+  submission-id: 879043981848219668
 530048576454393862:
-  submission-id: 880121569320501260
+  ability-uses: 1
+  confessional-id: 879052256765440120
   inventory: []
   name: Jp
   role: Basilisk
-  state: Alive
-  confessional-id: 879052256765440120
-  ability-uses: 1
+  state: Dead
+  submission-id: 880121569320501260
 560820749992984597:
-  submission-id: 879051855538303037
+  ability-uses: 1
+  confessional-id: 879053184167976960
   inventory: []
   name: w0rm
   role: Parasite
-  state: Alive
-  confessional-id: 879053184167976960
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051855538303037
 603320196903469194:
-  submission-id: 879051555586854923
+  ability-uses: 1
+  confessional-id: 879052997076852736
   inventory: []
   name: Niles
   role: Assassin
-  state: Alive
-  confessional-id: 879052997076852736
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051555586854923
 638649154826010664:
-  submission-id: 880121703961866260
+  ability-uses: 1
+  confessional-id: 879052967364423792
   inventory: []
   name: Owler
   role: Enchanter
-  state: Alive
-  confessional-id: 879052967364423792
-  ability-uses: 1
+  state: Dead
+  submission-id: 880121703961866260
 676270088017543168:
-  submission-id: 879051428822388736
+  ability-uses: 1
+  confessional-id: 879052236016197672
   inventory: []
   name: Heidi
   role: Chef
   state: Alive
-  confessional-id: 879052236016197672
-  ability-uses: 1
+  submission-id: 879051428822388736
 697270660187029505:
-  submission-id: 879051907254063104
+  ability-uses: 1
+  confessional-id: 879052918152654889
   inventory: []
   name: Harsh
   role: Pacifist
-  state: Alive
-  confessional-id: 879052918152654889
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051907254063104
 725823265087422495:
-  submission-id: 879051656183042088
+  ability-uses: 1
+  confessional-id: 879053104446865478
   inventory: []
   name: Slade
   role: Hunter
-  state: Alive
-  confessional-id: 879053104446865478
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051656183042088
 765968317294313492:
-  submission-id: 879051755298639882
+  ability-uses: 1
+  confessional-id: 879053166426075196
   inventory: []
   name: Tyriq
   role: Detective
-  state: Alive
-  confessional-id: 879053166426075196
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051755298639882
 820745177710723124:
-  submission-id: 879043941419327528
+  ability-uses: 1
+  confessional-id: 879052138246975579
   inventory: []
   name: Amber
   role: Artisan
   state: Alive
-  confessional-id: 879052138246975579
-  ability-uses: 1
+  submission-id: 879043941419327528
 872945943551557632:
-  submission-id: 879051700747513856
+  ability-uses: 1
+  confessional-id: 879053142782803978
   inventory: []
   name: Taylor
   role: Necromancer
-  state: Alive
-  confessional-id: 879053142782803978
-  ability-uses: 1
+  state: Dead
+  submission-id: 879051700747513856

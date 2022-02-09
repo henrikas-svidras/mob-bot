@@ -41,15 +41,25 @@ AVAILABLE_ROLES = ENV_VARS['available-roles']
 def check_if_confessional(ctx):
     return ctx.channel.category.id == ENV_VARS['confessional-chats']
 
+def check_if_purgatory(ctx):
+    return ctx.channel.id == ENV_VARS['purgatory-channel']
+
 def check_if_host_chats(ctx):
-    print(ENV_VARS['host-chats'])
-    print(ctx.channel.id)
     return ctx.channel.id == ENV_VARS['host-chats']
 
 ### Discord bot stuff
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix='^', intents=intents)
+
+### Test
+
+@bot.command("test", hidden=True)
+@commands.has_permissions(administrator=True)
+async def test(ctx, text):
+    await ctx.send(f"{text}")
+    if text == 'TEST':
+        await ctx.send(f"tested")
 
 ### Methods called through discord chat
 
@@ -86,6 +96,7 @@ async def register_player(ctx, player, role):
         player_params = {
             "name": player_object.nick if not player_object.nick is None else player_object.name,
             "role": role,
+            "uses": 0,
             "state": "Alive",
             "inventory": [],
             "confessional-id":0,
@@ -151,8 +162,9 @@ async def stop_round_error(ctx, error):
 @bot.command("kill_player", hidden=True)
 @commands.has_permissions(administrator=True)
 @require(state="INTER_ROUND")
-async def kill_player(ctx, player):
-    """A method to kill a player (set to dead)
+async def kill_player(ctx, player, is_jury=None):
+    """A method to kill a player (set to dead). Takes as input player name, and whether to kill player (by default) or set to jury. 
+    If the latter functionality is requested add "jury" to the command, e.g: ^kill_player EvilPlayer jury
     """
     discord_server = ctx.guild
 
@@ -174,7 +186,10 @@ async def kill_player(ctx, player):
         player = live_players[player_object.id]
         if player["state"] == "Alive":
             display_name = player_object.nick if not player_object.nick is None else player_object.name
-            await ctx.channel.send(f"{display_name} will be killed (moved to 'Dead' role)")
+            if is_jury == 'Jury' or is_jury == 'jury':
+                await ctx.channel.send(f"{display_name} will be killed (moved to 'Jury' role)")
+            else:
+                await ctx.channel.send(f"{display_name} will be killed (moved to 'Dead' role)")
             player["state"] = 'Dead'
             update_yaml_file(PLAYER_FILE, player, player_object.id)
             for alliance, stats in alliances.items():
@@ -183,26 +198,37 @@ async def kill_player(ctx, player):
 
                     alliance_channel = discord.utils.get(discord_server.channels, id=alliance)
 
-                    overwrite = discord.PermissionOverwrite()
-                    overwrite.send_messages = False
-                    overwrite.read_messages = False
+                    # overwrite = discord.PermissionOverwrite()
+                    # overwrite.send_messages = False
+                    # overwrite.read_messages = False
 
-                    await alliance_channel.set_permissions(player_object, overwrite=overwrite)
+                    await alliance_channel.set_permissions(player_object, overwrite=None)
                     await alliance_channel.send(f"***{display_name} removed***")
 
 
                 update_yaml_file(ALLIANCE_FILE, stats, alliance)
+            await ctx.channel.send(f"Removed from alliances")
             alive_role = discord.utils.get(discord_server.roles, id=ENV_VARS['alive-role'])
-            dead_role = discord.utils.get(discord_server.roles, id=ENV_VARS['dead-role'])
+            
             await player_object.remove_roles(alive_role) #adds the role
-            await player_object.add_roles(dead_role) #adds the role
+            if is_jury == 'Jury' or is_jury == 'jury':
+                jury_role = discord.utils.get(discord_server.roles, id=ENV_VARS['jury-role'])
+                await player_object.add_roles(jury_role) #adds the role
+                await ctx.channel.send(f"Added Jury role")
 
+            else:
+                dead_role = discord.utils.get(discord_server.roles, id=ENV_VARS['dead-role'])
+                await player_object.add_roles(dead_role) #adds the role
+                await ctx.channel.send(f"Added Dead role")
         else:
             await ctx.channel.send(f"It seems that you are trying to kill an already dead player.")
 
 @bot.command("send_all", hidden=True)
 @commands.has_permissions(administrator=True)
-async def test(ctx, message_id):
+async def send_all(ctx, message_id):
+    """The command will resend a message that you have composed to everyone. 
+    Send the message to any chat and give the message ID to this command.
+    """
     
     discord_server = ctx.guild
     message = await ctx.fetch_message(message_id)
@@ -231,7 +257,6 @@ async def test(ctx, message_id):
             await msg.pin()
     
     await ctx.channel.send("Sent to all Alive players.")
-
 
 @bot.command("find_player_nick", hidden=True)
 @commands.has_permissions(administrator=True)
@@ -301,7 +326,7 @@ async def revive_player(ctx, player):
 
             display_name = player_object.nick if not player_object.nick is None else player_object.name
 
-            await ctx.channel.send(f"{display_name} has been reviven.")
+            await ctx.channel.send(f"{display_name} has been revived.")
 
 
 @bot.command("print_vote", hidden=True)
@@ -386,7 +411,7 @@ async def vote(ctx, player):
 @vote.error
 async def vote_error(ctx, error):
    if isinstance(error, commands.DisabledCommand):
-       await ctx.channel.send('This command is disabled during INTER_ROUND, because the round is over.')
+       await ctx.channel.send('This command is disabled outside of a round.')
 
 @bot.command("alliance", hidden=False)
 @commands.has_role(ENV_VARS["alive-role"])
@@ -479,6 +504,25 @@ async def alliance(ctx, name, *args):
     }
     
     update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
+
+@bot.command("jury_in")
+@commands.has_role(ENV_VARS["jury-role"])
+@commands.check(check_if_purgatory)
+async def use(ctx):
+    guild = ctx.guild
+    member = ctx.author
+
+    final_round_channel = discord.utils.get(guild.channels, id=888211962209632256)
+
+    overwrite = discord.PermissionOverwrite()
+    overwrite.send_messages = True
+    overwrite.read_messages = True
+
+    await final_round_channel.set_permissions(member, overwrite=overwrite)
+
+
+
+
 
 @bot.command("use", hidden=True)
 @commands.has_role(ENV_VARS["alive-role"])
@@ -691,6 +735,10 @@ async def enchant(ctx, player):
     
 
 bot.help_command = commands.DefaultHelpCommand(verify_checks=False, no_category='Player commands')
+
+from .roles import Triggerfinger
+bot.add_cog(Houdini(bot))
+
 
 ### Start bot
 bot.run(TOKEN)
