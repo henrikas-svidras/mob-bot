@@ -13,3 +13,6 @@ def is_dead(player_object):
     else:
         return False
 
+class WrongRoleError(Exception):
+    """Raised if wrong role tries to use a command"""
+    pass

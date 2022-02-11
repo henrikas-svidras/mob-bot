@@ -19,9 +19,6 @@ def require(state=None):
                 if (isinstance(state, str) and not game_state == state) or (isinstance(state, list) and not game_state in state):
                     raise DisabledCommand(
                         f"Game is currently not in {game_state} state, meaning this command cannot be called.")
-            
-            # Checks role (TODO)
-            # Checks channel (TODO)
 
             return await func(*args, **kwargs)
         return wrapper_func

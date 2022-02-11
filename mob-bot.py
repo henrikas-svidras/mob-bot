@@ -52,15 +52,6 @@ intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix='^', intents=intents)
 
-### Test
-
-@bot.command("test", hidden=True)
-@commands.has_permissions(administrator=True)
-async def test(ctx, text):
-    await ctx.send(f"{text}")
-    if text == 'TEST':
-        await ctx.send(f"tested")
-
 ### Methods called through discord chat
 
 # Commands to use before the game
@@ -77,7 +68,7 @@ async def register_player(ctx, player, role):
         for p in live_players:
             print(f"Already assigned {p}.")
             live_roles.append(live_players[p]['role'])
-    print(live_roles)
+
     discord_server = ctx.guild
     
     ### Tries to look up the targeted member:
@@ -505,228 +496,6 @@ async def alliance(ctx, name, *args):
     
     update_yaml_file(ALLIANCE_FILE, alliance, channel.id)
 
-@bot.command("jury_in")
-@commands.has_role(ENV_VARS["jury-role"])
-@commands.check(check_if_purgatory)
-async def use(ctx):
-    guild = ctx.guild
-    member = ctx.author
-
-    final_round_channel = discord.utils.get(guild.channels, id=888211962209632256)
-
-    overwrite = discord.PermissionOverwrite()
-    overwrite.send_messages = True
-    overwrite.read_messages = True
-
-    await final_round_channel.set_permissions(member, overwrite=overwrite)
-
-
-
-
-
-@bot.command("use", hidden=True)
-@commands.has_role(ENV_VARS["alive-role"])
-@commands.check(check_if_confessional)
-@require(state="IN_ROUND")
-async def use(ctx, item, *args):
-    await ctx.channel.send(f"Command is disabled.")
-    return
-    guild = ctx.guild
-    member = ctx.author
-
-    live_players = get_yaml(PLAYER_FILE)
-    items = get_yaml(VOTE_TRACKING_FILE)
-    game_state = get_yaml(GAME_STATE_FILE)
-
-    round_number = game_state['Round']
-  
-    if not item.lower() in live_players[member.id]['inventory'].lower():
-        await ctx.channel.send(f"You are attempting to use {item}, but you don't have it in your inventory.")
-        return
-    elif item.lower() == 'extra vote':
-        if not len(args)==1:
-            ctx.channel.send('Exactly 1 target is allowed with an Extra Vote.')
-            return 
-        player_object = guild.get_member_named(args[0])
-        
-        if player_object is None:
-            await ctx.channel.send(f"Can't find your target '{args[0]}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
-            return
-        
-        if player_object.id in live_players:
-            if live_players[player_object.id]['state'] == 'Alive':
-                items[round_number][member.id].append(f'Extra Vote->{args}')
-                update_yaml_file(ITEM_TRACKING_FILE, items[round_number], round_number)
-                await ctx.channel.send(f"You have successfully used the {item} against {player_object.nick}.")
-            else:
-                await ctx.channel.send(f"You are trying to use the {item} on {player_object.nick}, but this player is dead!")
-                return
-        else:
-            await ctx.channel.send(f"You are trying to use the {item} on {player_object.nick}, but this user is not in the game!")
-            return
-
-        
-    elif item.lower() == 'shield':
-        if len(args)>0:
-            ctx.channel.send('Shield requires no target but it will be used to protect you.')
-        
-        items[round_number][member.id].append(f'Shield')
-        update_yaml_file(ITEM_TRACKING_FILE, items[round_number], round_number)
-        await ctx.channel.send(f"You have successfully used the {item}. Two votes against you will be nullified tonight.")
-        
-    elif item.lower() == 'sword':
-        if not len(args)==1:
-            ctx.channel.send('Exactly 1 target is allowed with an Extra Vote.')
-            return
-        
-        player_object = guild.get_member_named(args[0])
-        
-        if player_object is None:
-            await ctx.channel.send(f"Can't find your target '{args[0]}'. Maybe you spelled the name incorrectly?\nIf you are sure that is a correct call please ping @Host ASAP with your vote.")
-            return
-        
-        if player_object.id in live_players:
-            if live_players[player_object.id]['state'] == 'Alive':
-                items[round_number][member.id].append(f'Sword->{args}')
-                update_yaml_file(ITEM_TRACKING_FILE, items[round_number], round_number)
-                await ctx.channel.send(f"You have successfully used the {item} against {player_object.nick}. An additional vote will be cast on them.")
-            else:
-                await ctx.channel.send(f"You are trying to use the {item} on {player_object.nick}, but this player is dead!")
-                return
-        else:
-            await ctx.channel.send(f"You are trying to use the {item} on {player_object.nick}, but this user is not in the game!")
-            return
-
-    elif 'doll' in item.lower():
-        if len(args)>0:
-            ctx.channel.send('Doll requires no target but it will be used on the target it was created for.')
-        
-        # Need to figure this is the doll of who.
-        doll = item[:-5]
-        player_object = guild.get_member_named(doll)
-
-        if player_object is None:
-            await ctx.channel.send(f"Can't figure out of who is this doll. If the name is spelled correctly please contact host ASAP.")
-            return
-
-        if player_object.id in live_players:
-            if live_players[player_object.id]['state'] == 'Alive':
-                items[round_number][member.id].append(f'{player_object.nick} Doll')
-                update_yaml_file(ITEM_TRACKING_FILE, items[round_number], round_number)
-                await ctx.channel.send(f"You have successfully used the {player_object.nick} Doll. An additional vote will be cast on them.")
-            else:
-                await ctx.channel.send(f"You are trying to use the {player_object.nick} Doll, but this player is dead, so sadly the doll is just a toy now!")
-                return
-
-    else:
-        ctx.channel.send('The item is found in your inventory but I cannot recognise what item this is :(. If you see this error please @ the Hosts ASAP, they need to help you and me <3.')
-        return
-
-
-@bot.command("execute", hidden=True)
-@commands.check(check_if_confessional)
-async def execute(ctx):
-    return
-
-    guild = ctx.guild
-    caller = ctx.author
-
-    players = get_yaml(ENV_VARS['player-file'])
-
-    caller_dict = players[caller.id]
-
-    caller_role = caller_dict['role']
-    #caller_sub_channel = caller_dict['submission-id']
-
-    if not caller_role == "Executioner":
-        await ctx.channel.send("You are not the Executioner.")
-        return
-    else:
-        abilities_channel_id = ENV_VARS['abilities_channel']
-        abilities_channel = discord.utils.get(guild.channels, id = abilities_channel_id)
-
-        display_name = caller.nick if not caller.nick is None else caller.name
-
-        await abilities_channel.send(f"{display_name} has used the Executioner ability.")
-        await ctx.channel.send("You have used the Executioner ability.\nYou can use ^cancel to cancel the ability use.")
-
-        #await caller_sub_channel.edit(topic=f'Executioner Rol')
-
-        # Pakeisti žaidėjo role uses left
-        players = get_yaml(ENV_VARS['player-file'])
-        caller_dict = players[caller.id]
-
-        caller_dict['ability-uses'] += 1 #(padidina per 1) Galėtum rašyti ir player_dict['ability-uses'] = player_dict['ability-uses'] + 1 , bet taip ppaprasčiau
-
-        # naudoji metodą (update_yaml_file (aš pats parašiau))
-        # pirmas argumentas yra failas, šiuo atveju reik pakeist players file, tai nurodai kaip jis vadinasi, pavadinimas išsaugotas PLAYER_FILE
-        # antras argumentas player_dict. Jį mes prieš 3 eilutes pakeitėme kad turėtų naują skaičių abilities
-        # trečias argumentas žaidėjo ID. Čia kaip to dictionary "key". Visi key dabar yra žaidėjų ID.
-        update_yaml_file(PLAYER_FILE, caller_dict, caller.id)
-
-@bot.command("cancel", hidden=True)
-async def cancel(ctx):
-    return
-
-    guild = ctx.guild
-    caller = ctx.author
-
-    abilities_channel_id = ENV_VARS['abilities_channel']
-    abilities_channel = discord.utils.get(guild.channels, id = abilities_channel_id)
-
-    display_name = caller.nick if not caller.nick is None else caller.name
-
-
-    await abilities_channel.send(f"{display_name} is cancelling their ability.")
-    await ctx.channel.send("Your ability use cancelling has been noted.")
-
-    # Pakeisti žaidėjo role uses left
-    players = get_yaml(ENV_VARS['player-file'])
-    caller_dict = players[caller.id]
-
-    caller_dict['ability-uses'] += 1 #(padidina per 1) Galėtum rašyti ir player_dict['ability-uses'] = player_dict['ability-uses'] + 1 , bet taip ppaprasčiau
-
-    # naudoji metodą (update_yaml_file (aš pats parašiau))
-    # pirmas argumentas yra failas, šiuo atveju reik pakeist players file, tai nurodai kaip jis vadinasi, pavadinimas išsaugotas PLAYER_FILE
-    # antras argumentas player_dict. Jį mes prieš 3 eilutes pakeitėme kad turėtų naują skaičių abilities
-    # trečias argumentas žaidėjo ID. Čia kaip to dictionary "key".
-    update_yaml_file(PLAYER_FILE, caller_dict, caller.id)
-
-@bot.command("enchant", hidden=True)
-async def enchant(ctx, player):
-
-    return
-
-    guild = ctx.guild
-    caller = ctx.author
-
-    player_object = guild.get_member_named(player)
-
-    players = get_yaml(ENV_VARS['player-file'])
-
-    player_dict = players[player_object.id]
-
-    player_submission_channel_id = player_dict['submission-id']
-
-    player_submission_channel = discord.utils.get(guild.channels, id = player_submission_channel_id)
-
-    #if else
-
-    await player_submission_channel.send("An Enchanter has restored you an ability use.")
-
-    # Pakeisti žaidėjo role uses left
-    caller_dict = players[caller.id] 
-    caller_dict['ability-uses'] -= 1 #(sumažina per 1)
-
-    # naudoji metodą (update_yaml_file (aš pats parašiau))
-    # pirmas argumentas yra failas, šiuo atveju reik pakeist players file, tai nurodai kaip jis vadinasi, pavadinimas išsaugotas PLAYER_FILE
-    # antras argumentas player_dict. Jį mes prieš 3 eilutes pakeitėme kad turėtų naują skaičių abilities
-    # trečias argumentas žaidėjo ID. Čia kaip to dictionary "key".
-    update_yaml_file(PLAYER_FILE, caller_dict, caller.id)
-
-
-
-    
 
 
 
@@ -736,9 +505,8 @@ async def enchant(ctx, player):
 
 bot.help_command = commands.DefaultHelpCommand(verify_checks=False, no_category='Player commands')
 
-from .roles import Triggerfinger
-bot.add_cog(Houdini(bot))
-
+from roles import VotesAndCommands
+bot.add_cog(VotesAndCommands(bot))
 
 ### Start bot
 bot.run(TOKEN)
