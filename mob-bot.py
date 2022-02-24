@@ -336,10 +336,13 @@ async def print_vote(ctx, round=None):
         votee_object = discord_server.get_member(votee)
         voter_name = voter_object.nick if not voter_object.nick is None else voter_object.name
         votee_name = votee_object.nick if not votee_object.nick is None else votee_object.name
+
         if players[voter_object.id]['state'] == 'Dead':
             continue
         elif players[voter_object.id]['role'] == 'Parasite':
             message_dic[f'{voter_name}'] = 'N/A\n'
+        elif players[voter_object.id]['role'] == 'Hydra':
+            message_dic[f'{voter_name}'] = f'{players[voter_object.id]["targets"]}\n'
         else:
             message_dic[f'{voter_name}'] = f'{votee_name}\n'
 
@@ -388,7 +391,19 @@ async def vote(ctx, player):
                 round_votes[ctx.message.author.id] = player_object.id
                 update_yaml_file(VOTE_TRACKING_FILE, round_votes, round_number)
                 display_name = player_object.nick if not player_object.nick is None else player_object.name
-                await ctx.channel.send(f"Your vote against {display_name} has been noted.\nYou can change your vote before the deadline by using this command again.")
+                if not players[ctx.author.id]['role'] == 'Hydra':
+                    await ctx.channel.send(f"Your vote against {display_name} has been noted.\nYou can change your vote before the deadline by using this command again.")
+                else:
+                    hydra_targets = players[ctx.author.id]['targets']
+                    
+                    hydra_targets[2] = hydra_targets[1]
+                    hydra_targets[1] = hydra_targets[0]
+                    hydra_targets[0] = display_name
+                    players[ctx.author.id]['targets'] = hydra_targets
+                    await ctx.channel.send(f"Your vote against {display_name} has been noted.\n Your current votes are {hydra_targets}.")
+                    update_yaml_file(PLAYER_FILE, players[ctx.author.id], ctx.author.id)
+                    
+
                 await ctx.message.pin()
 
         else:

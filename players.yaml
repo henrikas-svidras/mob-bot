@@ -22,6 +22,7 @@
   state: Alive
   submission-id: 945748213288304640
   uses: 3
+  targets: []
 595537848971689984:
   confessional-id: 945734036859531334
   inventory: []
