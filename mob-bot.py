@@ -1,5 +1,5 @@
 
-from mob_library.helpers import is_dead
+from mob_library.helpers import is_dead, is_jury
 import discord
 from discord.ext import commands
 import yaml
