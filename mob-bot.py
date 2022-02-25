@@ -266,15 +266,16 @@ async def find_player_nick(ctx, player):
 
 @bot.command("announce", hidden=True)
 @commands.has_permissions(administrator=True)
-async def find_player_nick(ctx, message_id:int, channel_id:int=None):
+async def announce(ctx, message_id:int, channel_id:int=None):
     discord_server = ctx.guild
     if channel_id is None:
         channel = ctx.channel
     else:
         channel = discord.utils.get(discord_server.channels, id=channel_id)
     message = await ctx.fetch_message(message_id)
+    file_to_send = await message.attachments[0].to_file()
 
-    await channel.send(message.content)
+    await channel.send(message.content, file=file_to_send)
 
 
 
