@@ -129,6 +129,7 @@ class VotesAndCommands(commands.Cog):
             raise WrongRoleError
         channel = discord.utils.get(discord_server.channels, id=ABILITIES_CHANNEL)
         await channel.send(hostrole.mention + f"\nOutlaw flees the vote reading with 1 player receiving most votes.")
+        await ctx.channel.send(f"You can no longer vote this round.")
 
     @commands.command('gift')
     @commands.has_role(ENV_VARS["alive-role"])

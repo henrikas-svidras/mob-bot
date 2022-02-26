@@ -21,8 +21,11 @@
   role: Hydra
   state: Alive
   submission-id: 945748213288304640
+  targets:
+  - Zer0
+  - Paul
+  - Maddy
   uses: 3
-  targets: ["Snowman", "Snowman", "Snowman"]
 595537848971689984:
   confessional-id: 945734036859531334
   inventory: []
@@ -108,7 +111,7 @@
   inventory: []
   name: Maddy
   role: Lich
-  state: Alive
+  state: Dead
   submission-id: 945734569926205540
   uses: 2
 945027102615437363:
