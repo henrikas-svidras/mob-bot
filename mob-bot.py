@@ -273,7 +273,11 @@ async def announce(ctx, message_id:int, channel_id:int=None):
     else:
         channel = discord.utils.get(discord_server.channels, id=channel_id)
     message = await ctx.fetch_message(message_id)
-    file_to_send = await message.attachments[0].to_file()
+
+    if message.attachments:
+        file_to_send = await message.attachments[0].to_file()
+    else:
+        file_to_send = None
 
     await channel.send(message.content, file=file_to_send)
 
