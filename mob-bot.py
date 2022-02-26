@@ -126,10 +126,20 @@ async def begin_round(ctx):
     update_yaml_file(GAME_STATE_FILE, new_round_number, "Round")
     update_yaml_file(GAME_STATE_FILE, "IN_ROUND", "game_state")
 
-    rounds_votes = {}
-
     await ctx.channel.send("Switching to IN_ROUND")
     await ctx.channel.send(f"We are in Round {new_round_number}")
+
+    for player in players:
+        if players[player]['role'] == "Hydra":
+            discord_server = ctx.guild
+            player_object = discord.utils.get(discord_server.members, id=player)
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+            players[player]['targets'] = [display_name,display_name,display_name]
+            update_yaml_file(PLAYER_FILE, players[player], player)
+    
+    await ctx.channel.send(f"Hydra votes reset.")
+
+
 
 @begin_round.error
 async def begin_round_error(ctx, error):
