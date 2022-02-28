@@ -41,6 +41,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nTracker {caller} is scanning each player.")
         await ctx.channel.send(f"You are scanning each player for their remaining abilities.\nHosts will get back to you with the scan results soon.")
+        await ctx.message.pin()
 
     @commands.command('avenge')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -55,6 +56,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nVigilante {caller} has avenged last round's victim(s).")
         await ctx.channel.send(f"You have avenged last round's victims.\nHosts will make an announcement as soon as possible.")
+        await ctx.message.pin()
 
     @commands.command('raise')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -69,6 +71,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nLich {caller} has raised an army of undead.")
         await ctx.channel.send(f"You have raised an army of undead.\nHosts will make an announcement as soon as possible.")
+        await ctx.message.pin()
 
     @commands.command('smuggle')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -83,6 +86,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(f"\nSmuggler {caller} is smuggling for {target}.")
         await ctx.channel.send(f"You are smuggling for {target}.")
+        await ctx.message.pin()
 
     @commands.command('quarantine')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -97,6 +101,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nLazar {caller} has quarantined {target1}, {target2} and {target3}.")
         await ctx.channel.send(f"You have quarantined {target1}, {target2} and {target3}.\nHosts will make an announcement as soon as possible.")
+        await ctx.message.pin()
 
     @commands.command('pull')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -111,6 +116,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(f"\nTriggerfinger {caller} is pulling their trigger on the player with {mostorleast} valid past votes against them.")
         await ctx.channel.send(f"You are pulling your trigger on the player with {mostorleast} valid past votes against them.\nYou may cancel your ability before the deadline by pinging Hosts.")
+        await ctx.message.pin()
 
     @commands.command('brew')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -125,6 +131,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nWitch {caller} has brewed a {type1} Potion for {target1} and a {type2} Potion for {target2}.")
         await ctx.channel.send(f"You have brewed a {type1} Potion for {target1} and a {type2} Potion for {target2}.\nHosts will notify the recipients as soon as possible.")
+        await ctx.message.pin()
 
     @commands.command('shuffle')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -139,6 +146,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nGambler {caller} has shuffled all roles {includingexcluding} their own.")
         await ctx.channel.send(f"You have shuffled all roles {includingexcluding} your own.\nHosts will take care of this as soon as possible.")
+        await ctx.message.pin()
 
     @commands.command('divide')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -167,6 +175,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(f"Maniac {caller} is casting {number} additional votes against {target}.")
         await ctx.channel.send(f"You have cast {number} additional votes against {target}.\nYou may cancel your ability before the deadline by pinging Hosts.")
+        await ctx.message.pin()
 
     @commands.command('flee')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -181,6 +190,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(f"\nOutlaw {caller} is fleeing with one other player receiving most valid votes.")
         await ctx.channel.send(f"You have decided to flee the vote reading, meaning, you can no longer vote.\nYou may cancel your ability before the deadline by pinging Hosts.")
+        await ctx.message.pin()
 
     @commands.command('gift')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -195,6 +205,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nJeweler {caller} has gifted an Opal to {target}.")
         await ctx.channel.send(f"You have gifted an Opal to {target}.\nHosts will notify the recipients as soon as possible.")
+        await ctx.message.pin()
 
     @commands.command('order')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -209,6 +220,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(f"\nCanvasser {caller} is ordering a revote this round.")
         await ctx.channel.send(f"You are ordering a revote this round.\nYou may cancel your ability before the deadline by pinging Hosts.")
+        await ctx.message.pin()
 
     @commands.command('link')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -223,6 +235,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(f"\nSorcerer {caller} is linking with {target} to {absorbornullify} – nullifying {number} votes.")
         await ctx.channel.send(f"You are linking with {target} to {absorbornullify} – nullifying {number} votes.\nYou may cancel your ability before the deadline by pinging Hosts.")
+        await ctx.message.pin()
 
     @commands.command('reset')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -237,6 +250,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nReverter {caller} has reset {target}'s abilities.")
         await ctx.channel.send(f"You have reset {target}'s abilities.\nHosts will notify the recipients as soon as possible.")
+        await ctx.message.pin()
 
     @commands.command('torture')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -251,6 +265,7 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(f"\nTormentor {caller} is torturing {target}.")
         await ctx.channel.send(f"You are torturing {target} now.\nYou may cancel your ability before the deadline by pinging Hosts.")
+        await ctx.message.pin()
 
     @commands.command('shed')
     @commands.has_role(ENV_VARS["alive-role"])
@@ -265,3 +280,4 @@ class VotesAndCommands(commands.Cog):
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(f"\nHydra {caller} is shedding a head.")
         await ctx.channel.send(f"You are shedding a head now. This decreases your voting power.\nYou may cancel your ability before the deadline by pinging Hosts.")
+        await ctx.message.pin()
