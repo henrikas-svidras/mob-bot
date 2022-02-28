@@ -22,16 +22,16 @@
   state: Alive
   submission-id: 945748213288304640
   targets:
-  - Zer0
-  - Paul
-  - Maddy
+  - Shail
+  - Randy
+  - Colby
   uses: 3
 595537848971689984:
   confessional-id: 945734036859531334
   inventory: []
   name: Paul
   role: Tormentor
-  state: Alive
+  state: Dead
   submission-id: 945734609084243978
   uses: 3
 611006250360111136:
@@ -39,7 +39,7 @@
   inventory: []
   name: Nex
   role: Sorcerer
-  state: Alive
+  state: Dead
   submission-id: 945747540303839242
   uses: 1
 939672363354718308:
@@ -95,7 +95,7 @@
   inventory: []
   name: Bingo
   role: Gambler
-  state: Alive
+  state: Dead
   submission-id: 945747617537740890
   uses: 2
 945018367704703076:
