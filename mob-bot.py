@@ -371,6 +371,7 @@ async def print_vote(ctx, round=None):
 
 @bot.command("vote", hidden=False)
 @commands.has_any_role(ENV_VARS["alive-role"], ENV_VARS["undead-role"])
+@commands.check(check_if_confessional)
 @require(state="IN_ROUND")
 async def vote(ctx, player):
     """A command to vote against another player

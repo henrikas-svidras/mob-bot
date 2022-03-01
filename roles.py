@@ -30,6 +30,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('scan')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Scan(self, ctx):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -45,6 +46,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('avenge')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Avenge(self, ctx):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -60,6 +62,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('raise')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Raise(self, ctx):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -75,6 +78,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('smuggle')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Smuggle(self, ctx, target):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -90,6 +94,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('quarantine')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Quarantine(self, ctx, target1, target2, target3):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -105,6 +110,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('pull')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Pull(self, ctx, mostorleast):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -120,6 +126,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('brew')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Brew(self, ctx, target1, type1, target2, type2):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -135,6 +142,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('shuffle')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Shuffle(self, ctx, includingexcluding):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -150,6 +158,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('divide')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Divide(self, ctx):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -164,6 +173,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('cast')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Cast(self, ctx, target, number=0):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -179,6 +189,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('flee')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Flee(self, ctx):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -194,6 +205,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('gift')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Gift(self, ctx, target):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -209,6 +221,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('order')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Order(self, ctx):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -224,6 +237,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('link')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Link(self, ctx, target, absorbornullify, number=0):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -239,6 +253,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('reset')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Reset(self, ctx, target):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -254,6 +269,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('torture')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Torture(self, ctx, target):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
@@ -269,6 +285,7 @@ class VotesAndCommands(commands.Cog):
 
     @commands.command('shed')
     @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
     async def Shed(self, ctx):
         players = get_yaml(PLAYER_FILE)
         discord_server = ctx.guild
