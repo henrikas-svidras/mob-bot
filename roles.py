@@ -15,6 +15,9 @@ class VotesAndCommands(commands.Cog):
         self.bot = bot
         self.role_name = None
 
+    def check_if_confessional(ctx):
+        return ctx.channel.category.id == ENV_VARS['confessional-chats']
+
 
     @commands.command('swap')
     @commands.has_permissions(administrator=True)
