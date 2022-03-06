@@ -16,14 +16,13 @@ PLAYER_FILE = ENV_VARS['player-file']
 ABILITIES_CHANNEL = ENV_VARS['abilities-channel']
 HOST_ROLE = ENV_VARS['host-role']
 
+def check_if_confessional(ctx):
+    return ctx.channel.category.id == ENV_VARS['confessional-chats']
+
 class VotesAndCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.role_name = None
-
-    def check_if_confessional(ctx):
-        return ctx.channel.category.id == ENV_VARS['confessional-chats']
-
 
     @commands.command('swap')
     @commands.has_permissions(administrator=True)
@@ -242,7 +241,7 @@ class VotesAndCommands(commands.Cog):
         channel = discord.utils.get(discord_server.channels, id=ABILITIES_CHANNEL)
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nJeweler {caller} has gifted an Opal to {target}.")
-        await ctx.channel.send(f"You have gifted an Opal to {target}.\nHosts will notify the recipients as soon as possible.")
+        await ctx.channel.send(f"You have gifted an Opal to {target}.\nHosts will notify the recipient as soon as possible.")
         await ctx.message.pin()
 
     @commands.command('order')
@@ -290,7 +289,7 @@ class VotesAndCommands(commands.Cog):
         channel = discord.utils.get(discord_server.channels, id=ABILITIES_CHANNEL)
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
         await channel.send(hostrole.mention + f"\nReverter {caller} has reset {target}'s abilities.")
-        await ctx.channel.send(f"You have reset {target}'s abilities.\nHosts will notify the recipients as soon as possible.")
+        await ctx.channel.send(f"You have reset {target}'s abilities.\nHosts will notify the target as soon as possible.")
         await ctx.message.pin()
 
     @commands.command('torture')
