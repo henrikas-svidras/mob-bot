@@ -1,3 +1,4 @@
+import random
 import discord
 from discord.ext import commands
 from mob_library.caching import get_yaml
@@ -108,12 +109,32 @@ class VotesAndCommands(commands.Cog):
     @commands.command('shuffle')
     @commands.has_role(ENV_VARS["alive-role"])
     async def Shuffle(self, ctx, includingexcluding):
+        raise NotImplementedError # this still needs to be finished
         discord_server = ctx.guild
         callers_role = PLAYERS[ctx.author.id]['role']
         if callers_role != 'Gambler':
             raise WrongRoleError
+
+        all_available_roles = ENV_VARS['available-roles']
+        shuffled_roles = random.shuffle(all_available_roles)
+        for player in PLAYERS:
+            if (player['state'] == 'Dead') and (player['role'] in shuffled_roles):
+                shuffled_roles.remove(player['role'])
+        
+        test_message = ""
+        for n, player in enumerate(PLAYERS):
+            player_object = discord.utils.get(discord_server.members, id=player)
+            display_name = player_object.nick if not player_object.nick is None else player_object.name
+            test_message+=display_name+f" now has a new role {shuffled_roles[n]}\n"
+
+        
+        
+
+
+
         channel = discord.utils.get(discord_server.channels, id=ABILITIES_CHANNEL)
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
+        await channel.send(hostrole.mention + f"\nShuffle all roles {includingexcluding} Gambler.")
         await channel.send(hostrole.mention + f"\nShuffle all roles {includingexcluding} Gambler.")
 
     @commands.command('divide')
