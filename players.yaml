@@ -11,7 +11,7 @@
   inventory: []
   name: Ruster
   role: Triggerfinger
-  state: Alive
+  state: Dead
   submission-id: 945748174449049650
   uses: 1
 530681517203128331:
@@ -22,9 +22,9 @@
   state: Alive
   submission-id: 945748213288304640
   targets:
-  - Shail
-  - Randy
-  - Colby
+  - Snowman
+  - Snowman
+  - Snowman
   uses: 3
 595537848971689984:
   confessional-id: 945734036859531334
@@ -47,7 +47,7 @@
   inventory: []
   name: Randy
   role: Smuggler
-  state: Alive
+  state: Dead
   submission-id: 945748189527547924
   uses: 3
 940249292508119090:
@@ -55,7 +55,7 @@
   inventory: []
   name: Xenon
   role: Houdini
-  state: Alive
+  state: Dead
   submission-id: 945748247710924880
   uses: 1
 943167279359746079:
@@ -63,7 +63,7 @@
   inventory: []
   name: Zer0
   role: Reverter
-  state: Alive
+  state: Dead
   submission-id: 945734385766912090
   uses: 2
 944009277209714738:
@@ -79,7 +79,7 @@
   inventory: []
   name: Glados
   role: Vigilante
-  state: Alive
+  state: Dead
   submission-id: 945747598537543721
   uses: 2
 944604019022770216:
@@ -119,7 +119,7 @@
   inventory: []
   name: Jesse
   role: Maniac
-  state: Alive
+  state: Dead
   submission-id: 945734480235204649
   uses: 1
 945113384167297074:
@@ -135,7 +135,7 @@
   inventory: []
   name: KingCrab
   role: Witch
-  state: Alive
+  state: Dead
   submission-id: 945734499877142658
   uses: 3
 945332277771137056:
@@ -143,6 +143,6 @@
   inventory: []
   name: Kirin
   role: Tracker
-  state: Alive
+  state: Dead
   submission-id: 945747523258171393
   uses: 4
