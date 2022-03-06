@@ -136,7 +136,7 @@ async def begin_round(ctx):
             display_name = player_object.nick if not player_object.nick is None else player_object.name
             players[player]['targets'] = [display_name,display_name,display_name]
             update_yaml_file(PLAYER_FILE, players[player], player)
-    
+
     await ctx.channel.send(f"Hydra votes reset.")
 
 
@@ -371,6 +371,7 @@ async def print_vote(ctx, round=None):
 
 @bot.command("vote", hidden=False)
 @commands.has_any_role(ENV_VARS["alive-role"], ENV_VARS["undead-role"])
+@commands.check(check_if_confessional)
 @require(state="IN_ROUND")
 async def vote(ctx, player):
     """A command to vote against another player
@@ -410,14 +411,14 @@ async def vote(ctx, player):
                     await ctx.channel.send(f"Your vote against {display_name} has been noted.\nYou can change your vote before the deadline by using this command again.")
                 else:
                     hydra_targets = players[ctx.author.id]['targets']
-                    
+
                     hydra_targets[2] = hydra_targets[1]
                     hydra_targets[1] = hydra_targets[0]
                     hydra_targets[0] = display_name
                     players[ctx.author.id]['targets'] = hydra_targets
                     await ctx.channel.send(f"Your vote against {display_name} has been noted.\n Your current votes are {hydra_targets}.")
                     update_yaml_file(PLAYER_FILE, players[ctx.author.id], ctx.author.id)
-                    
+
 
                 await ctx.message.pin()
 
@@ -498,10 +499,12 @@ async def alliance(ctx, name, *args):
 
     category = discord.utils.get(guild.categories, id=ENV_VARS['alliance-chats'])
     spectator = discord.utils.get(guild.roles, id=ENV_VARS['spectator-role'])
+    staff = discord.utils.get(guild.roles, id=ENV_VARS['staff-role'])
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
         guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-        spectator: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+        spectator: discord.PermissionOverwrite(read_messages=True, send_messages=False),
+        staff: discord.PermissionOverwrite(read_messages=True, send_messages=True)
     }
 
     channel_topic = '**'
