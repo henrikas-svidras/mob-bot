@@ -1,9 +1,14 @@
 import random
 import discord
 from discord.ext import commands
-from mob_library.caching import get_yaml
+from mob_library.caching import get_yaml, update_yaml_file
+
 
 from mob_library.helpers import WrongRoleError
+
+
+
+
 
 ENV_VARS = get_yaml("env.yaml")
 PLAYER_FILE = ENV_VARS['player-file']
@@ -316,6 +321,31 @@ class VotesAndCommands(commands.Cog):
             raise WrongRoleError
         channel = discord.utils.get(discord_server.channels, id=ABILITIES_CHANNEL)
         hostrole = discord.utils.get(discord_server.roles, id=HOST_ROLE)
+
+        if players[ctx.author.id]['uses']>0:
+            players[ctx.author.id]['uses']-=1
+            players[ctx.author.id]['uses-this-round']+=1
+            update_yaml_file(PLAYER_FILE, players[ctx.author.id], ctx.author.id)
+        else:
+            await ctx.channel.send(f"You have no more heads to shed.")
+        players[ctx.author.id]['uses']-=1
+        
+
         await channel.send(f"\nHydra {caller} is shedding a head.")
-        await ctx.channel.send(f"You are shedding a head now. This decreases your voting power.\nYou may cancel your ability before the deadline by pinging Hosts.")
+        await ctx.channel.send(f"You are shedding a head now. This decreases your voting power.\nYou may cancel your ability before the deadline by using `^cancel` command.")
         await ctx.message.pin()
+
+    @commands.command('cancel')
+    @commands.has_role(ENV_VARS["alive-role"])
+    @commands.check(check_if_confessional)
+    async def Cancel(self, ctx):
+        players = get_yaml(PLAYER_FILE)
+        discord_server = ctx.guild
+        caller = ctx.author.nick if not ctx.author.nick is None else ctx.author.name
+        callers_role = players[ctx.author.id]['role']
+        if callers_role == 'Hydra':
+            if players[ctx.author.id]['uses-this-round']>0:
+                await ctx.channel.send(f"Your head will no longer be shed.")
+                players[ctx.author.id]['uses-this-round']-=1
+                update_yaml_file(PLAYER_FILE, players[ctx.author.id], ctx.author.id)
+            await ctx.channel.send(f"You have not used your ability so there is nothing to cancel.")
