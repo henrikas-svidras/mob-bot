@@ -130,12 +130,15 @@ async def begin_round(ctx):
     await ctx.channel.send(f"We are in Round {new_round_number}")
 
     for player in players:
+        players[ctx.author.id]['uses-this-round'] = 0
+        
         if players[player]['role'] == "Hydra":
             discord_server = ctx.guild
             player_object = discord.utils.get(discord_server.members, id=player)
             display_name = player_object.nick if not player_object.nick is None else player_object.name
-            players[player]['targets'] = [display_name,display_name,display_name]
-            update_yaml_file(PLAYER_FILE, players[player], player)
+            players[player]['targets'] = [display_name]*int(players[player]['uses'])
+        
+        update_yaml_file(PLAYER_FILE, players[player], player)
 
     await ctx.channel.send(f"Hydra votes reset.")
 
@@ -411,9 +414,8 @@ async def vote(ctx, player):
                     await ctx.channel.send(f"Your vote against {display_name} has been noted.\nYou can change your vote before the deadline by using this command again.")
                 else:
                     hydra_targets = players[ctx.author.id]['targets']
-
-                    hydra_targets[2] = hydra_targets[1]
-                    hydra_targets[1] = hydra_targets[0]
+                    if hydra_targets>1:
+                        hydra_targets[1:] = hydra_targets[:-1]
                     hydra_targets[0] = display_name
                     players[ctx.author.id]['targets'] = hydra_targets
                     await ctx.channel.send(f"Your vote against {display_name} has been noted.\n Your current votes are {hydra_targets}.")
