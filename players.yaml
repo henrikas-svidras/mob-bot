@@ -26,13 +26,8 @@
   targets:
   - Snowman
   - Snowman
-<<<<<<< HEAD
-  - Snowman
-  uses: 3
-=======
   uses: 2
   uses-this-round: 0
->>>>>>> 93f6bd552095546b9740f787b88251adfa7b74a0
 595537848971689984:
   confessional-id: 945734036859531334
   inventory: []
