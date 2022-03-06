@@ -414,7 +414,7 @@ async def vote(ctx, player):
                     await ctx.channel.send(f"Your vote against {display_name} has been noted.\nYou can change your vote before the deadline by using this command again.")
                 else:
                     hydra_targets = players[ctx.author.id]['targets']
-                    if hydra_targets>1:
+                    if len(hydra_targets)>1:
                         hydra_targets[1:] = hydra_targets[:-1]
                     hydra_targets[0] = display_name
                     players[ctx.author.id]['targets'] = hydra_targets
