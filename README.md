@@ -2,4 +2,6 @@
 
 Scripts for MOB voting
 
-Work in progress, just skeletal set up at the moment.
+This was used in Discord server's for MOB game to count votes, and facilitate  ability use.
+
+Implemented using discordpy.
